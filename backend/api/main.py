@@ -1,11 +1,13 @@
+# main.py - PRODUCTION VERSION with Dashboard Processor
 import asyncio, time
 from typing import Dict, Any, Optional
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .utils import utc_now_iso, short_id, extract_first_json_block
-from .clients import fetch_market_detail, fetch_trades, fetch_news_for_market, call_claude, fetch_markets, fetch_latest_news
+from .clients import fetch_market_detail, fetch_news_for_market, call_claude, fetch_markets, fetch_latest_news
 from .mcp import get_manipulation_report, call_mcp_with_payload, startup_mcp_servers, shutdown_mcp_servers
+from .dashboard_processor import process_chat_for_dashboard
 
 # prompts module supplied by prompt-engineer
 try:
@@ -13,7 +15,7 @@ try:
 except Exception:
     prompts_module = None
 
-app = FastAPI(title="PolySage API - Real MCP Integration")
+app = FastAPI(title="PolySage API - Production")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -28,8 +30,8 @@ async def on_startup():
         await startup_mcp_servers()
         print("✓ MCP servers initialized")
     except Exception as e:
-        print(f"✗ Warning: MCP servers failed to start: {e}")
-        print("  API will continue but MCP features may be unavailable")
+        print(f"✗ CRITICAL: MCP servers failed to start: {e}")
+        raise  # Don't continue if MCP servers fail
     print("="*70)
 
 
@@ -41,198 +43,200 @@ async def on_shutdown():
     print("✓ Shutdown complete")
 
 
-def build_unified_response(chat: Dict[str,Any], dashboard: Dict[str,Any]) -> Dict[str,Any]:
-    return {"chat": chat or {}, "dashboard": dashboard or {}}
-
-
 @app.post("/chat")
 async def post_chat(payload: Dict[str,Any]):
     """
-    Full orchestration flow with REAL MCP servers:
-      1) Receive FE chat: {"query": "...", "context": {...}}
-      2) Fetch market & news (client wrappers)
-      3) Call prompt-engineer: build_structured_prompt(query, context, market, news)
-      4) Send structured prompt outputs:
-           - post mcp_payload to MCP via call_mcp_with_payload() → REAL MCP SERVERS
-           - call Claude with system_prompt & user_prompt via call_claude()
-         (run MCP + Claude concurrently)
-      5) Receive results, parse Claude JSON if possible
-      6) Call prompt-engineer: post_process_results(mcp_result, claude_result, structured_prompt, market, news)
-      7) Return final {"chat","dashboard"} to frontend
+    Main chat endpoint with dashboard generation.
+    
+    Returns:
+        {
+            "chat": {...},
+            "dashboard": {...}  // Exact dashboardData.js format
+        }
     """
     request_id = short_id()
     start_ts = time.time()
 
-    query = payload.get("query") or payload.get("text") or ""
+    query = payload.get("query") or payload.get("text")
+    if not query:
+        raise HTTPException(status_code=400, detail="Missing 'query' field")
+    
     context = payload.get("context", {}) or {}
     market_id = context.get("market_id")
 
-    # 1) fetch market & trades (parallel)
+    print(f"\n[{request_id}] New chat request: {query[:50]}...")
+
+    # 1) Fetch market & trades
     market = {"id": market_id} if market_id else {"id": "unknown", "title": query}
     trades = []
+    
     if market_id:
-        market_task = asyncio.create_task(fetch_market_detail(market_id))
-        trades_task = asyncio.create_task(fetch_trades(market_id, limit=50))
-    else:
-        market_task = None
-        trades_task = None
-
-    if market_task:
+        print(f"[{request_id}] Fetching market data for: {market_id}")
         try:
+            market_task = asyncio.create_task(fetch_market_detail(market_id))
+            trades_task = asyncio.create_task(fetch_trades(market_id, limit=50))
             market = await market_task
-        except Exception:
-            market = {"id": market_id or "unknown", "title": query}
-        try:
             trades = await trades_task
-        except Exception:
-            trades = []
+        except Exception as e:
+            print(f"[{request_id}] Warning: Failed to fetch market details: {e}")
+            market = {"id": market_id, "title": query}
 
-    # 2) fetch news (small) concurrently while prompt building happens
-    news_task = asyncio.create_task(fetch_news_for_market((market.get("title") or query)[:200], page_size=5))
-
-    # 3) build structured prompt via prompt-engineer
+    # 2) Fetch news
+    print(f"[{request_id}] Fetching news...")
     try:
-        if prompts_module and hasattr(prompts_module, "build_structured_prompt"):
-            structured_prompt = prompts_module.build_structured_prompt(query, context, market, await news_task)
-            if hasattr(structured_prompt, "__await__"):
-                structured_prompt = await structured_prompt
-        else:
-            news = await news_task
-            structured_prompt = {
-                "mcp_payload": {
-                    "market_id": market.get("id"),
-                    "market": {"id": market.get("id"), "title": market.get("title"), "currentPrice": market.get("currentPrice") or market.get("lastPrice")},
-                    "recent_trades": market.get("recentTrades", []),
-                    "orderbook": market.get("orderbook", {}),
-                    "news": news or [],
-                    "meta": {"request_id": request_id}
-                },
-                "system_prompt": getattr(prompts_module, "SYSTEM_MARKET_ANALYST", "You are an expert prediction-market analyst. Return JSON only."),
-                "user_prompt": f"Question: {query}\nContext: {market.get('title')}"
-            }
-    except Exception:
-        news = await news_task
-        structured_prompt = {
-            "mcp_payload": {
-                "market_id": market.get("id"),
-                "market": {"id": market.get("id"), "title": market.get("title")},
-                "recent_trades": market.get("recentTrades", []),
-                "orderbook": market.get("orderbook", {}),
-                "news": news or [],
-                "meta": {"request_id": request_id}
-            },
-            "system_prompt": "You are an expert prediction-market analyst. Return JSON only.",
-            "user_prompt": f"Question: {query}\nContext: {market.get('title')}"
-        }
-
-    # Ensure news variable is set
-    if 'news' not in locals():
-        news = await news_task
-
-    # 4) call MCP + Claude concurrently using structured_prompt
-    mcp_payload = structured_prompt.get("mcp_payload") or {
-        "market_id": market.get("id"),
-        "market": market,
-        "recent_trades": market.get("recentTrades", []),
-        "orderbook": market.get("orderbook", {}),
-        "news": news or [],
-        "meta": {"request_id": request_id}
-    }
-    system_prompt = structured_prompt.get("system_prompt", getattr(prompts_module, "SYSTEM_MARKET_ANALYST", "You are an expert prediction-market analyst. Return JSON only."))
-    user_prompt = structured_prompt.get("user_prompt", f"Question: {query}\nContext: {market.get('title')}")
-
-    # Call REAL MCP servers + Claude concurrently
-    print(f"[{request_id}] Calling real MCP servers + Claude...")
-    mcp_task = asyncio.create_task(call_mcp_with_payload(mcp_payload))
-    claude_task = asyncio.create_task(call_claude(system_prompt, user_prompt, model=(getattr(prompts_module, "CLAUDE_MODEL", None) if prompts_module else None), temperature=0.0))
-
-    # wait for both
-    mcp_result = await mcp_task
-    claude_raw = None
-    claude_json = {}
-    try:
-        claude_raw = await claude_task
-        parsed = extract_first_json_block(claude_raw)
-        if parsed and isinstance(parsed, dict):
-            claude_json = parsed
-        else:
-            claude_json = {"answer": claude_raw, "reasoning": [], "recommended_action": None, "confidence": 0.0}
+        news = await fetch_news_for_market((market.get("title") or query)[:200], page_size=5)
     except Exception as e:
-        claude_raw = None
-        claude_json = {"answer": f"Claude unavailable: {str(e)}", "reasoning": [], "recommended_action": None, "confidence": 0.0}
+        print(f"[{request_id}] Warning: Failed to fetch news: {e}")
+        news = []
 
-    print(f"[{request_id}] MCP risk score: {mcp_result.get('riskScore')}, flags: {len(mcp_result.get('flags', []))}")
-
-    # 5) call prompt-engineer's post-processing
-    try:
-        if prompts_module and hasattr(prompts_module, "post_process_results"):
-            processed = prompts_module.post_process_results(mcp_result, claude_json, structured_prompt, market, news)
-            if hasattr(processed, "__await__"):
-                processed = await processed
-            report = processed or {}
-        else:
-            # fallback aggregator
-            report = {
-                "chat": {
-                    "answer": claude_json.get("answer"),
-                    "reasoning": claude_json.get("reasoning", []),
-                    "recommended_action": claude_json.get("recommended_action"),
-                    "confidence": claude_json.get("confidence", 0.0),
-                },
-                "dashboard": {
-                    "market": {"id": market.get("id"), "title": market.get("title"), "currentPrice": market.get("currentPrice") or market.get("lastPrice")},
-                    "manipulation": mcp_result,
-                    "news": news or []
-                }
-            }
-    except Exception:
-        report = {
-            "chat": {
-                "answer": claude_json.get("answer"),
-                "reasoning": claude_json.get("reasoning", []),
-                "recommended_action": claude_json.get("recommended_action"),
-                "confidence": claude_json.get("confidence", 0.0),
+    # 3) Build structured prompt
+    structured_prompt = {
+        "mcp_payload": {
+            "market_id": market.get("id"),
+            "market": {
+                "id": market.get("id"),
+                "title": market.get("title"),
+                "currentPrice": market.get("currentPrice") or market.get("lastPrice"),
+                "volume24hr": market.get("volume24hr")
             },
-            "dashboard": {
-                "market": {"id": market.get("id"), "title": market.get("title"), "currentPrice": market.get("currentPrice") or market.get("lastPrice")},
-                "manipulation": mcp_result,
-                "news": news or []
+            "recent_trades": market.get("recentTrades", trades),
+            "orderbook": market.get("orderbook", {}),
+            "news": news,
+            "meta": {"request_id": request_id}
+        },
+        "system_prompt": "You are an expert prediction-market analyst. Provide clear, actionable analysis.",
+        "user_prompt": f"Analyze this market comprehensively.\n\nQuestion: {market.get('title', query)}\n\nUser Query: {query}\n\nProvide analysis in JSON format with keys: answer, reasoning (array), recommended_action, confidence (0-1)"
+    }
+
+    # 4) Call MCP + Claude concurrently
+    print(f"[{request_id}] Calling MCP servers + Claude...")
+    
+    mcp_payload = structured_prompt["mcp_payload"]
+    system_prompt = structured_prompt["system_prompt"]
+    user_prompt = structured_prompt["user_prompt"]
+
+    try:
+        # Run both concurrently
+        mcp_task = asyncio.create_task(call_mcp_with_payload(mcp_payload))
+        claude_task = asyncio.create_task(call_claude(
+            system_prompt, 
+            user_prompt,
+            temperature=0.2,
+            max_tokens=1000
+        ))
+
+        mcp_result = await mcp_task
+        claude_raw = await claude_task
+        
+        print(f"[{request_id}] ✓ MCP analysis complete - Risk: {mcp_result.get('riskScore')}/100")
+        
+    except Exception as e:
+        print(f"[{request_id}] ✗ CRITICAL: Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+    # 5) Parse Claude response
+    try:
+        claude_json = extract_first_json_block(claude_raw)
+        if not claude_json or not isinstance(claude_json, dict):
+            claude_json = {
+                "answer": claude_raw,
+                "reasoning": ["Analysis provided"],
+                "recommended_action": "Review the detailed analysis",
+                "confidence": 0.7
             }
+    except Exception as e:
+        print(f"[{request_id}] Warning: Failed to parse Claude JSON: {e}")
+        claude_json = {
+            "answer": claude_raw,
+            "reasoning": [],
+            "recommended_action": None,
+            "confidence": 0.5
         }
 
-    # 6) ensure manipulation in dashboard
-    if "dashboard" in report:
-        if "manipulation" not in report["dashboard"]:
-            report["dashboard"]["manipulation"] = mcp_result
-    else:
-        report = build_unified_response(report.get("chat", {}), {"market": market, "manipulation": mcp_result, "news": news})
+    # 6) Transform MCP data into dashboard format using Claude
+    print(f"[{request_id}] Transforming to dashboard format...")
+    
+    try:
+        dashboard_data = await process_chat_for_dashboard(
+            mcp_result=mcp_result,
+            market=market,
+            call_claude_func=call_claude
+        )
+        print(f"[{request_id}] ✓ Dashboard data generated")
+        print(f"[{request_id}]   Health: {dashboard_data['healthScore']}/100")
+        print(f"[{request_id}]   Liquidity: {dashboard_data['liquidityScore']}/10")
+        print(f"[{request_id}]   News: {len(dashboard_data['news'])} articles")
+        
+    except Exception as e:
+        print(f"[{request_id}] ✗ CRITICAL: Dashboard transformation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Dashboard generation failed: {str(e)}")
+
+    # 7) Build chat response
+    chat_response = {
+        "answer": claude_json.get("answer", "Analysis complete. See dashboard for details."),
+        "reasoning": claude_json.get("reasoning", []),
+        "recommended_action": claude_json.get("recommended_action"),
+        "confidence": claude_json.get("confidence", 0.0),
+    }
 
     elapsed = time.time() - start_ts
-    print(f"[{request_id}] Request completed in {elapsed:.2f}s")
+    print(f"[{request_id}] ✓ Request completed in {elapsed:.2f}s\n")
 
-    # 7) return to frontend
-    return {"chat": report.get("chat", {}), "dashboard": report.get("dashboard", {})}
+    # 8) Return final response
+    return {
+        "chat": chat_response,
+        "dashboard": dashboard_data
+    }
 
 
 @app.get("/dashboard")
 async def get_dashboard(market_id: str = Query(...)):
-    """Get dashboard data for a market using REAL MCP analysis"""
-    market = await fetch_market_detail(market_id)
-    trades = await fetch_trades(market_id, limit=50)
-    news = await fetch_news_for_market(market.get("title") or market_id, page_size=5)
+    """
+    Get dashboard data for a specific market.
     
-    # Call real MCP servers for manipulation analysis
-    manipulation = await get_manipulation_report(market_id, trades, market.get("orderbook", {}), news, meta={"market": market})
+    Returns dashboard in exact dashboardData.js format.
+    """
+    request_id = short_id()
+    print(f"\n[{request_id}] Dashboard request for: {market_id}")
     
-    return {
-        "request_id": short_id(),
-        "timestamp": utc_now_iso(),
-        "market": {"id": market.get("id"), "title": market.get("title"), "currentPrice": market.get("currentPrice") or market.get("lastPrice")},
-        "manipulation": manipulation,
-        "news": news,
-        "sources": [f"polymarket:{market.get('id')}", "MCP real-data servers"],
-        "mcp_status": "ok" if manipulation and manipulation.get("riskScore") is not None else "unavailable"
-    }
+    try:
+        # Fetch market data
+        market = await fetch_market_detail(market_id)
+        trades = await fetch_trades(market_id, limit=50)
+        news = await fetch_news_for_market(market.get("title") or market_id, page_size=5)
+        
+        print(f"[{request_id}] Running MCP analysis...")
+        
+        # Get MCP analysis
+        mcp_result = await get_manipulation_report(
+            market_id, 
+            trades, 
+            market.get("orderbook", {}), 
+            news, 
+            meta={"market": market}
+        )
+        
+        print(f"[{request_id}] Transforming to dashboard format...")
+        
+        # Transform to dashboard format
+        dashboard_data = await process_chat_for_dashboard(
+            mcp_result=mcp_result,
+            market=market,
+            call_claude_func=call_claude
+        )
+        
+        print(f"[{request_id}] ✓ Dashboard generated\n")
+        
+        return {
+            "request_id": request_id,
+            "timestamp": utc_now_iso(),
+            "dashboard": dashboard_data,
+            "mcp_status": "ok"
+        }
+        
+    except Exception as e:
+        print(f"[{request_id}] ✗ Dashboard generation failed: {e}\n")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/health")
@@ -241,15 +245,24 @@ async def health():
     from .clients import POLY_API_URL, NEWS_API_URL, CLAUDE_API_URL
     from .mcp import _mcp_manager
     
+    mcp_poly_running = False
+    mcp_news_running = False
+    
+    if _mcp_manager.initialized:
+        mcp_poly_running = _mcp_manager.polymarket_proc is not None and _mcp_manager.polymarket_proc.poll() is None
+        mcp_news_running = _mcp_manager.news_proc is not None and _mcp_manager.news_proc.poll() is None
+    
+    all_ok = mcp_poly_running and mcp_news_running and bool(CLAUDE_API_URL)
+    
     return {
-        "ok": True,
+        "ok": all_ok,
         "ts": utc_now_iso(),
         "services": {
             "polymarket": bool(POLY_API_URL),
             "news": bool(NEWS_API_URL),
             "claude": bool(CLAUDE_API_URL),
-            "mcp_polymarket": _mcp_manager.polymarket_proc is not None and _mcp_manager.polymarket_proc.poll() is None if _mcp_manager.initialized else False,
-            "mcp_news": _mcp_manager.news_proc is not None and _mcp_manager.news_proc.poll() is None if _mcp_manager.initialized else False
+            "mcp_polymarket": mcp_poly_running,
+            "mcp_news": mcp_news_running
         }
     }
 
@@ -259,11 +272,16 @@ async def root():
     """API info"""
     return {
         "service": "PolySage API",
-        "version": "1.0.0",
-        "mcp_integration": "Real MCP Servers (Polymarket + News)",
+        "version": "2.0.0-production",
+        "features": [
+            "Real-time market analysis",
+            "MCP server integration",
+            "Claude-powered dashboard generation",
+            "Structured data transformation"
+        ],
         "endpoints": {
-            "POST /chat": "Main chat endpoint with MCP analysis",
-            "GET /dashboard?market_id=X": "Get dashboard data",
-            "GET /health": "Health check"
+            "POST /chat": "Main chat endpoint with dashboard data",
+            "GET /dashboard?market_id=X": "Get structured dashboard data",
+            "GET /health": "Health check and service status"
         }
     }
