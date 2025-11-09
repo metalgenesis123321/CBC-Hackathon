@@ -1,714 +1,7 @@
-# # # main.py - PRODUCTION VERSION with Dashboard Processor
-# # import asyncio, time
-# # from typing import Dict, Any, Optional
-# # from fastapi import FastAPI, Query, HTTPException
-# # from fastapi.middleware.cors import CORSMiddleware
 
-# # from utils import utc_now_iso, short_id, extract_first_json_block
-# # from clients import fetch_market_detail, fetch_news_for_market, call_claude, fetch_markets, fetch_latest_news
-# # from mcp import get_manipulation_report, call_mcp_with_payload, startup_mcp_servers, shutdown_mcp_servers
-# # from dashboard_processor import process_chat_for_dashboard
-
-# # # prompts module supplied by prompt-engineer
-# # try:
-# #     from . import prompts as prompts_module
-# # except Exception:
-# #     prompts_module = None
-
-# # app = FastAPI(title="PolySage API - Production")
-# # app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-
-# # # Lifecycle events for MCP servers
-# # @app.on_event("startup")
-# # async def on_startup():
-# #     """Start MCP servers when API starts"""
-# #     print("="*70)
-# #     print("PolySage API Starting...")
-# #     print("="*70)
-# #     try:
-# #         await startup_mcp_servers()
-# #         print("✓ MCP servers initialized")
-# #     except Exception as e:
-# #         print(f"✗ CRITICAL: MCP servers failed to start: {e}")
-# #         raise  # Don't continue if MCP servers fail
-# #     print("="*70)
-
-
-# # @app.on_event("shutdown")
-# # async def on_shutdown():
-# #     """Shutdown MCP servers when API stops"""
-# #     print("\nShutting down MCP servers...")
-# #     await shutdown_mcp_servers()
-# #     print("✓ Shutdown complete")
-
-
-# # @app.post("/chat")
-# # async def post_chat(payload: Dict[str,Any]):
-# #     """
-# #     Main chat endpoint with dashboard generation.
-    
-# #     Returns:
-# #         {
-# #             "chat": {...},
-# #             "dashboard": {...}  // Exact dashboardData.js format
-# #         }
-# #     """
-# #     request_id = short_id()
-# #     start_ts = time.time()
-
-# #     query = payload.get("query") or payload.get("text")
-# #     if not query:
-# #         raise HTTPException(status_code=400, detail="Missing 'query' field")
-    
-# #     context = payload.get("context", {}) or {}
-# #     market_id = context.get("market_id")
-
-# #     print(f"\n[{request_id}] New chat request: {query[:50]}...")
-
-# #     # 1) Fetch market & trades
-# #     market = {"id": market_id} if market_id else {"id": "unknown", "title": query}
-# #     trades = []
-    
-# #     if market_id:
-# #         print(f"[{request_id}] Fetching market data for: {market_id}")
-# #         try:
-# #             market_task = asyncio.create_task(fetch_market_detail(market_id))
-            
-# #             market = await market_task
-            
-# #         except Exception as e:
-# #             print(f"[{request_id}] Warning: Failed to fetch market details: {e}")
-# #             market = {"id": market_id, "title": query}
-
-# #     # 2) Fetch news
-# #     print(f"[{request_id}] Fetching news...")
-# #     try:
-# #         news = await fetch_news_for_market((market.get("title") or query)[:200], page_size=5)
-# #     except Exception as e:
-# #         print(f"[{request_id}] Warning: Failed to fetch news: {e}")
-# #         news = []
-
-# #     # 3) Build structured prompt
-# #     structured_prompt = {
-# #         "mcp_payload": {
-# #             "market_id": market.get("id"),
-# #             "market": {
-# #                 "id": market.get("id"),
-# #                 "title": market.get("title"),
-# #                 "currentPrice": market.get("currentPrice") or market.get("lastPrice"),
-# #                 "volume24hr": market.get("volume24hr")
-# #             },
-# #             "recent_trades": market.get("recentTrades", trades),
-# #             "orderbook": market.get("orderbook", {}),
-# #             "news": news,
-# #             "meta": {"request_id": request_id}
-# #         },
-# #         "system_prompt": "You are an expert prediction-market analyst. Provide clear, actionable analysis.",
-# #         "user_prompt": f"Analyze this market comprehensively.\n\nQuestion: {market.get('title', query)}\n\nUser Query: {query}\n\nProvide analysis in JSON format with keys: answer, reasoning (array), recommended_action, confidence (0-1)"
-# #     }
-
-# #     # 4) Call MCP + Claude concurrently
-# #     print(f"[{request_id}] Calling MCP servers + Claude...")
-    
-# #     mcp_payload = structured_prompt["mcp_payload"]
-# #     system_prompt = structured_prompt["system_prompt"]
-# #     user_prompt = structured_prompt["user_prompt"]
-
-# #     try:
-# #         # Run both concurrently
-# #         mcp_task = asyncio.create_task(call_mcp_with_payload(mcp_payload))
-# #         claude_task = asyncio.create_task(call_claude(
-# #             system_prompt, 
-# #             user_prompt,
-# #             temperature=0.2,
-# #             max_tokens=1000
-# #         ))
-
-# #         mcp_result = await mcp_task
-# #         claude_raw = await claude_task
-        
-# #         print(f"[{request_id}] ✓ MCP analysis complete - Risk: {mcp_result.get('riskScore')}/100")
-        
-# #     except Exception as e:
-# #         print(f"[{request_id}] ✗ CRITICAL: Analysis failed: {e}")
-# #         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-
-# #     # 5) Parse Claude response
-# #     try:
-# #         claude_json = extract_first_json_block(claude_raw)
-# #         if not claude_json or not isinstance(claude_json, dict):
-# #             claude_json = {
-# #                 "answer": claude_raw,
-# #                 "reasoning": ["Analysis provided"],
-# #                 "recommended_action": "Review the detailed analysis",
-# #                 "confidence": 0.7
-# #             }
-# #     except Exception as e:
-# #         print(f"[{request_id}] Warning: Failed to parse Claude JSON: {e}")
-# #         claude_json = {
-# #             "answer": claude_raw,
-# #             "reasoning": [],
-# #             "recommended_action": None,
-# #             "confidence": 0.5
-# #         }
-
-# #     # 6) Transform MCP data into dashboard format using Claude
-# #     print(f"[{request_id}] Transforming to dashboard format...")
-    
-# #     try:
-# #         dashboard_data = await process_chat_for_dashboard(
-# #             mcp_result=mcp_result,
-# #             market=market,
-# #             call_claude_func=call_claude
-# #         )
-# #         print(f"[{request_id}] ✓ Dashboard data generated")
-# #         print(f"[{request_id}]   Health: {dashboard_data['healthScore']}/100")
-# #         print(f"[{request_id}]   Liquidity: {dashboard_data['liquidityScore']}/10")
-# #         print(f"[{request_id}]   News: {len(dashboard_data['news'])} articles")
-        
-# #     except Exception as e:
-# #         print(f"[{request_id}] ✗ CRITICAL: Dashboard transformation failed: {e}")
-# #         raise HTTPException(status_code=500, detail=f"Dashboard generation failed: {str(e)}")
-
-# #     # 7) Build chat response
-# #     chat_response = {
-# #         "answer": claude_json.get("answer", "Analysis complete. See dashboard for details."),
-# #         "reasoning": claude_json.get("reasoning", []),
-# #         "recommended_action": claude_json.get("recommended_action"),
-# #         "confidence": claude_json.get("confidence", 0.0),
-# #     }
-
-# #     elapsed = time.time() - start_ts
-# #     print(f"[{request_id}] ✓ Request completed in {elapsed:.2f}s\n")
-
-# #     # 8) Return final response
-# #     return {
-# #         "chat": chat_response,
-# #         "dashboard": dashboard_data
-# #     }
-
-
-# # @app.get("/dashboard")
-# # async def get_dashboard(market_id: str = Query(...)):
-# #     """
-# #     Get dashboard data for a specific market.
-    
-# #     Returns dashboard in exact dashboardData.js format.
-# #     """
-# #     request_id = short_id()
-# #     print(f"\n[{request_id}] Dashboard request for: {market_id}")
-    
-# #     try:
-# #         # Fetch market data
-# #         market = await fetch_market_detail(market_id)
-# #         news = await fetch_news_for_market(market.get("title") or market_id, page_size=5)
-        
-# #         print(f"[{request_id}] Running MCP analysis...")
-        
-# #         # Get MCP analysis
-# #         mcp_result = await get_manipulation_report(
-# #             market_id, 
-# #             market.get("orderbook", {}), 
-# #             news, 
-# #             meta={"market": market}
-# #         )
-        
-# #         print(f"[{request_id}] Transforming to dashboard format...")
-        
-# #         # Transform to dashboard format
-# #         dashboard_data = await process_chat_for_dashboard(
-# #             mcp_result=mcp_result,
-# #             market=market,
-# #             call_claude_func=call_claude
-# #         )
-        
-# #         print(f"[{request_id}] ✓ Dashboard generated\n")
-        
-# #         return {
-# #             "request_id": request_id,
-# #             "timestamp": utc_now_iso(),
-# #             "dashboard": dashboard_data,
-# #             "mcp_status": "ok"
-# #         }
-        
-# #     except Exception as e:
-# #         print(f"[{request_id}] ✗ Dashboard generation failed: {e}\n")
-# #         raise HTTPException(status_code=500, detail=str(e))
-
-
-# # @app.get("/health")
-# # async def health():
-# #     """Health check endpoint"""
-# #     from clients import POLY_API_URL, NEWS_API_URL, CLAUDE_API_URL
-# #     from mcp import _mcp_manager
-    
-# #     mcp_poly_running = False
-# #     mcp_news_running = False
-    
-# #     if _mcp_manager.initialized:
-# #         mcp_poly_running = _mcp_manager.polymarket_proc is not None and _mcp_manager.polymarket_proc.poll() is None
-# #         mcp_news_running = _mcp_manager.news_proc is not None and _mcp_manager.news_proc.poll() is None
-    
-# #     all_ok = mcp_poly_running and mcp_news_running and bool(CLAUDE_API_URL)
-    
-# #     return {
-# #         "ok": all_ok,
-# #         "ts": utc_now_iso(),
-# #         "services": {
-# #             "polymarket": bool(POLY_API_URL),
-# #             "news": bool(NEWS_API_URL),
-# #             "claude": bool(CLAUDE_API_URL),
-# #             "mcp_polymarket": mcp_poly_running,
-# #             "mcp_news": mcp_news_running
-# #         }
-# #     }
-
-
-# # @app.get("/")
-# # async def root():
-# #     """API info"""
-# #     return {
-# #         "service": "PolySage API",
-# #         "version": "2.0.0-production",
-# #         "features": [
-# #             "Real-time market analysis",
-# #             "MCP server integration",
-# #             "Claude-powered dashboard generation",
-# #             "Structured data transformation"
-# #         ],
-# #         "endpoints": {
-# #             "POST /chat": "Main chat endpoint with dashboard data",
-# #             "GET /dashboard?market_id=X": "Get structured dashboard data",
-# #             "GET /health": "Health check and service status"
-# #         }
-# #     }
-# # main.py - PRODUCTION VERSION with Two-Type Chat System
-# import asyncio, time
-# from typing import Dict, Any, Optional
-# from fastapi import FastAPI, Query, HTTPException
-# from fastapi.middleware.cors import CORSMiddleware
-
-# from utils import utc_now_iso, short_id, extract_first_json_block
-# from clients import fetch_market_detail, fetch_news_for_market, call_claude, fetch_markets, fetch_latest_news
-# from mcp import get_manipulation_report, call_mcp_with_payload, startup_mcp_servers, shutdown_mcp_servers
-
-# # prompts module supplied by prompt-engineer
-# try:
-#     from . import prompts as prompts_module
-# except Exception:
-#     prompts_module = None
-
-# app = FastAPI(title="PolySage API - Production")
-# app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-
-# # Lifecycle events for MCP servers
-# @app.on_event("startup")
-# async def on_startup():
-#     """Start MCP servers when API starts"""
-#     print("="*70)
-#     print("PolySage API Starting...")
-#     print("="*70)
-#     try:
-#         await startup_mcp_servers()
-#         print("✓ MCP servers initialized")
-#     except Exception as e:
-#         print(f"✗ CRITICAL: MCP servers failed to start: {e}")
-#         raise  # Don't continue if MCP servers fail
-#     print("="*70)
-
-
-# @app.on_event("shutdown")
-# async def on_shutdown():
-#     """Shutdown MCP servers when API stops"""
-#     print("\nShutting down MCP servers...")
-#     await shutdown_mcp_servers()
-#     print("✓ Shutdown complete")
-
-
-# async def classify_chat_intent(query: str, market_id: Optional[str]) -> Dict[str, Any]:
-#     """
-#     Classify user intent: general_qa, dashboard_generation, or out_of_scope
-#     """
-#     classification_system = """You are a query classifier for a Polymarket analysis system.
-# Classify the user's query into one of these categories:
-
-# 1. "general_qa" - Questions about Polymarket (how it works, general info, explanations)
-# 2. "dashboard_generation" - Requests for analysis/dashboard/insights about a specific market/bet
-# 3. "out_of_scope" - Anything not related to Polymarket or prediction markets
-
-# Respond with ONLY a JSON object: {"intent": "general_qa|dashboard_generation|out_of_scope", "reason": "brief explanation"}"""
-
-#     classification_prompt = f"""Query: {query}
-# Market ID provided: {"Yes" if market_id else "No"}
-
-# Classify this query."""
-
-#     try:
-#         response = await call_claude(
-#             classification_system,
-#             classification_prompt,
-#             temperature=0.1,
-#             max_tokens=200
-#         )
-#         result = extract_first_json_block(response)
-#         if result and "intent" in result:
-#             return result
-#     except Exception as e:
-#         print(f"Classification failed: {e}")
-    
-#     # Fallback: if market_id exists, assume dashboard request
-#     if market_id:
-#         return {"intent": "dashboard_generation", "reason": "market_id provided"}
-#     return {"intent": "general_qa", "reason": "fallback classification"}
-
-
-# async def handle_general_qa(query: str, request_id: str) -> str:
-#     """
-#     Handle general questions about Polymarket - returns 3 sentence response
-#     """
-#     system_prompt = """You are a knowledgeable assistant for Polymarket, a prediction market platform.
-# Answer questions concisely and accurately about:
-# - How Polymarket works
-# - Prediction markets in general
-# - Trading mechanics
-# - Market types and features
-
-# Provide your answer in EXACTLY 3 sentences. Be clear, informative, and concise."""
-
-#     user_prompt = f"Question: {query}\n\nProvide a clear 3-sentence answer."
-    
-#     print(f"[{request_id}] Handling general Q&A...")
-    
-#     try:
-#         # Check if we need MCP data for this question
-#         needs_data = any(keyword in query.lower() for keyword in 
-#                         ['current', 'latest', 'recent', 'trending', 'popular', 'volume'])
-        
-#         if needs_data:
-#             print(f"[{request_id}] Fetching current market data via MCP...")
-#             try:
-#                 markets = await fetch_markets(limit=5)
-#                 context = f"\n\nCurrent trending markets: {[m.get('title', '') for m in markets[:3]]}"
-#                 user_prompt += context
-#             except Exception as e:
-#                 print(f"[{request_id}] Warning: Could not fetch market data: {e}")
-        
-#         response = await call_claude(
-#             system_prompt,
-#             user_prompt,
-#             temperature=0.3,
-#             max_tokens=300
-#         )
-        
-#         return response.strip()
-        
-#     except Exception as e:
-#         print(f"[{request_id}] Error in general Q&A: {e}")
-#         return "I apologize, but I'm having trouble processing your question right now. Polymarket is a prediction market platform where users can trade on the outcomes of future events. Please try rephrasing your question or visit polymarket.com for more information."
-
-
-# async def handle_dashboard_generation(query: str, market_id: str, request_id: str) -> Dict[str, Any]:
-#     """
-#     Generate dashboard data for a specific market/bet
-#     """
-#     print(f"[{request_id}] Generating dashboard for market: {market_id}")
-    
-#     # 1) Fetch market data
-#     try:
-#         market = await fetch_market_detail(market_id)
-#         print(f"[{request_id}] ✓ Market data retrieved: {market.get('title', '')[:50]}...")
-#     except Exception as e:
-#         print(f"[{request_id}] ✗ Failed to fetch market: {e}")
-#         raise HTTPException(status_code=404, detail=f"Market not found: {market_id}")
-    
-#     # 2) Fetch related news
-#     try:
-#         news = await fetch_news_for_market(market.get("title", ""), page_size=10)
-#         print(f"[{request_id}] ✓ Found {len(news)} news articles")
-#     except Exception as e:
-#         print(f"[{request_id}] Warning: News fetch failed: {e}")
-#         news = []
-    
-#     # 3) Build MCP payload for analysis
-#     mcp_payload = {
-#         "market_id": market.get("id"),
-#         "market": {
-#             "id": market.get("id"),
-#             "title": market.get("title"),
-#             "currentPrice": market.get("currentPrice") or market.get("lastPrice"),
-#             "volume24hr": market.get("volume24hr")
-#         },
-#         "recent_trades": market.get("recentTrades", []),
-#         "orderbook": market.get("orderbook", {}),
-#         "news": news,
-#         "meta": {"request_id": request_id, "user_query": query}
-#     }
-    
-#     # 4) Get MCP analysis
-#     print(f"[{request_id}] Running MCP analysis...")
-#     try:
-#         mcp_result = await call_mcp_with_payload(mcp_payload)
-#         print(f"[{request_id}] ✓ MCP analysis complete - Risk: {mcp_result.get('riskScore', 'N/A')}/100")
-#     except Exception as e:
-#         print(f"[{request_id}] ✗ MCP analysis failed: {e}")
-#         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-    
-#     # 5) Transform to dashboard format using structured prompt
-#     system_prompt = """You are a data transformation specialist for prediction market analysis.
-
-# Your task: Convert MCP analysis results into a structured dashboard JSON format.
-
-# CRITICAL RULES:
-# 1. Output ONLY valid JSON - no explanations, no markdown, no additional text
-# 2. All numeric fields must be numbers (not strings)
-# 3. All array fields must be arrays (not null)
-# 4. Follow the exact schema provided
-# 5. Base your analysis on the MCP data provided
-
-# You will receive:
-# - MCP analysis results (risk scores, manipulation signals, trends)
-# - Market data (prices, volume, trades)
-# - News articles
-
-# Generate a comprehensive dashboard dict."""
-
-#     user_prompt = f"""Based on this MCP analysis and market data, generate the dashboard JSON:
-
-# MARKET: {market.get('title', '')}
-# CURRENT PRICE: {market.get('currentPrice', 0)}
-# VOLUME 24H: {market.get('volume24hr', 0)}
-
-# MCP ANALYSIS:
-# {mcp_result}
-
-# NEWS COUNT: {len(news)}
-
-# Generate a JSON object with these fields:
-# {{
-#   "healthScore": <0-100 integer based on manipulation risk, liquidity, volume>,
-#   "liquidityScore": <0-10 float based on volume and orderbook depth>,
-#   "volatilityIndex": <0-100 integer based on price movements>,
-#   "sentimentScore": <-1 to 1 float based on news sentiment>,
-#   "riskFactors": [<array of string risk factors identified>],
-#   "opportunities": [<array of string opportunities>],
-#   "keyMetrics": {{
-#     "volume24h": <number>,
-#     "priceChange24h": <number percentage>,
-#     "uniqueTraders": <number>,
-#     "avgTradeSize": <number>
-#   }},
-#   "news": [<array of news objects with title, summary, sentiment, relevance>],
-#   "priceHistory": [<array of price points for last 7 days>],
-#   "recommendation": "<BUY|SELL|HOLD>",
-#   "confidence": <0-1 float>
-# }}
-
-# Output ONLY the JSON object, nothing else."""
-
-#     print(f"[{request_id}] Transforming to dashboard format...")
-#     try:
-#         dashboard_response = await call_claude(
-#             system_prompt,
-#             user_prompt,
-#             temperature=0.2,
-#             max_tokens=2500
-#         )
-        
-#         # Extract JSON from response
-#         dashboard_data = extract_first_json_block(dashboard_response)
-        
-#         if not dashboard_data or not isinstance(dashboard_data, dict):
-#             raise ValueError("Failed to generate valid dashboard JSON")
-        
-#         print(f"[{request_id}] ✓ Dashboard generated successfully")
-#         print(f"[{request_id}]   Health: {dashboard_data.get('healthScore', 'N/A')}/100")
-#         print(f"[{request_id}]   Recommendation: {dashboard_data.get('recommendation', 'N/A')}")
-        
-#         return dashboard_data
-        
-#     except Exception as e:
-#         print(f"[{request_id}] ✗ Dashboard transformation failed: {e}")
-#         raise HTTPException(status_code=500, detail=f"Dashboard generation failed: {str(e)}")
-
-
-# @app.post("/chat")
-# async def post_chat(payload: Dict[str, Any]):
-#     """
-#     Main chat endpoint - handles two types of requests:
-#     1. General Q&A about Polymarket (returns 3-sentence chat response)
-#     2. Dashboard generation for specific market (returns dashboard JSON)
-    
-#     Request body:
-#         {
-#             "query": "user question",
-#             "market_id": "optional market ID for dashboard generation"
-#         }
-    
-#     Response formats:
-#         General Q&A: {"type": "chat", "response": "3 sentence answer"}
-#         Dashboard: {"type": "dashboard", "data": {...dashboard object...}}
-#         Out of scope: {"type": "error", "message": "..."}
-#     """
-#     request_id = short_id()
-#     start_ts = time.time()
-    
-#     # Validate input
-#     query = payload.get("query") or payload.get("text")
-#     if not query:
-#         raise HTTPException(status_code=400, detail="Missing 'query' field")
-    
-#     market_id = payload.get("market_id")
-    
-#     print(f"\n[{request_id}] New chat request: {query[:60]}...")
-#     if market_id:
-#         print(f"[{request_id}] Market ID: {market_id}")
-    
-#     # Step 1: Classify intent
-#     classification = await classify_chat_intent(query, market_id)
-#     intent = classification.get("intent", "general_qa")
-    
-#     print(f"[{request_id}] Intent classified as: {intent}")
-#     print(f"[{request_id}] Reason: {classification.get('reason', 'N/A')}")
-    
-#     # Step 2: Route to appropriate handler
-#     try:
-#         if intent == "out_of_scope":
-#             elapsed = time.time() - start_ts
-#             print(f"[{request_id}] ✓ Out of scope query handled in {elapsed:.2f}s\n")
-            
-#             return {
-#                 "type": "error",
-#                 "message": "I'm designed to help with Polymarket-related questions and market analysis. Your query appears to be outside my scope. Please ask about prediction markets, how Polymarket works, or request analysis for a specific market."
-#             }
-        
-#         elif intent == "general_qa":
-#             response = await handle_general_qa(query, request_id)
-            
-#             elapsed = time.time() - start_ts
-#             print(f"[{request_id}] ✓ General Q&A completed in {elapsed:.2f}s\n")
-            
-#             return {
-#                 "type": "chat",
-#                 "response": response
-#             }
-        
-#         elif intent == "dashboard_generation":
-#             if not market_id:
-#                 return {
-#                     "type": "error",
-#                     "message": "To generate a dashboard, please provide a market_id. You can find market IDs on polymarket.com or ask me to search for specific markets."
-#                 }
-            
-#             dashboard_data = await handle_dashboard_generation(query, market_id, request_id)
-            
-#             elapsed = time.time() - start_ts
-#             print(f"[{request_id}] ✓ Dashboard generation completed in {elapsed:.2f}s\n")
-            
-#             return {
-#                 "type": "dashboard",
-#                 "data": dashboard_data
-#             }
-        
-#         else:
-#             raise HTTPException(status_code=500, detail="Unknown intent classification")
-    
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         print(f"[{request_id}] ✗ Request failed: {e}\n")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-# @app.get("/dashboard")
-# async def get_dashboard(market_id: str = Query(...)):
-#     """
-#     Get dashboard data for a specific market.
-    
-#     Returns dashboard in structured JSON format.
-#     """
-#     request_id = short_id()
-#     print(f"\n[{request_id}] Dashboard request for: {market_id}")
-    
-#     try:
-#         dashboard_data = await handle_dashboard_generation(
-#             query=f"Generate dashboard for market {market_id}",
-#             market_id=market_id,
-#             request_id=request_id
-#         )
-        
-#         return {
-#             "request_id": request_id,
-#             "timestamp": utc_now_iso(),
-#             "dashboard": dashboard_data,
-#             "status": "ok"
-#         }
-        
-#     except Exception as e:
-#         print(f"[{request_id}] ✗ Dashboard generation failed: {e}\n")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-# @app.get("/health")
-# async def health():
-#     """Health check endpoint"""
-#     from clients import POLY_API_URL, NEWS_API_URL, CLAUDE_API_URL
-#     from mcp import _mcp_manager
-    
-#     mcp_poly_running = False
-#     mcp_news_running = False
-    
-#     if _mcp_manager.initialized:
-#         mcp_poly_running = _mcp_manager.polymarket_proc is not None and _mcp_manager.polymarket_proc.poll() is None
-#         mcp_news_running = _mcp_manager.news_proc is not None and _mcp_manager.news_proc.poll() is None
-    
-#     all_ok = mcp_poly_running and mcp_news_running and bool(CLAUDE_API_URL)
-    
-#     return {
-#         "ok": all_ok,
-#         "ts": utc_now_iso(),
-#         "services": {
-#             "polymarket": bool(POLY_API_URL),
-#             "news": bool(NEWS_API_URL),
-#             "claude": bool(CLAUDE_API_URL),
-#             "mcp_polymarket": mcp_poly_running,
-#             "mcp_news": mcp_news_running
-#         }
-#     }
-
-
-# @app.get("/")
-# async def root():
-#     """API info"""
-#     return {
-#         "service": "PolySage API",
-#         "version": "3.0.0-production",
-#         "features": [
-#             "Two-type chat system (General Q&A / Dashboard Generation)",
-#             "Intent classification",
-#             "MCP server integration",
-#             "Claude-powered structured analysis",
-#             "3-sentence concise responses for general queries"
-#         ],
-#         "chat_types": {
-#             "general_qa": "Ask questions about Polymarket - get 3-sentence answers",
-#             "dashboard_generation": "Request market analysis - get full dashboard JSON",
-#             "out_of_scope": "Non-Polymarket queries are politely declined"
-#         },
-#         "endpoints": {
-#             "POST /chat": "Main chat endpoint (supports both types)",
-#             "GET /dashboard?market_id=X": "Direct dashboard data retrieval",
-#             "GET /health": "Health check and service status"
-#         },
-#         "request_format": {
-#             "query": "Your question or request (required)",
-#             "market_id": "Market ID for dashboard generation (optional)"
-#         }
-#     }
-# main.py - PRODUCTION with Exact Dashboard Format
 import asyncio, time, json
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -716,8 +9,49 @@ from utils import utc_now_iso, short_id, extract_first_json_block
 from clients import fetch_market_detail, fetch_news_for_market, call_claude, fetch_markets
 from mcp import call_mcp_with_payload, startup_mcp_servers, shutdown_mcp_servers
 
-app = FastAPI(title="PolySage API - Production")
+app = FastAPI(title="PolySage API - Enhanced")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Simple cache file
+CACHE_FILE = Path("response_cache.json")
+import time 
+
+def load_cache():
+    """Load cache from JSON file"""
+    if CACHE_FILE.exists():
+        try:
+            with open(CACHE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_cache(cache):
+    """Save cache to JSON file"""
+    try:
+        with open(CACHE_FILE, 'w') as f:
+            json.dump(cache, f, indent=2)
+    except Exception as e:
+        print(f"⚠️ Cache save failed: {e}")
+
+def get_cached(query):
+    """Get cached response"""
+    cache = load_cache()
+    key = query
+    if key in cache:
+        print(f"✅ Cache HIT")
+        
+        return cache[key]
+    print(f"❌ Cache MISS")
+    return None
+
+def set_cache(query, response):
+    """Store response in cache"""
+    cache = load_cache()
+    key = query.lower().strip()
+    cache[key] = response
+    save_cache(cache)
+    print(f"💾 Cached response")
 
 
 @app.on_event("startup")
@@ -734,6 +68,7 @@ async def on_startup():
         raise RuntimeError("Missing required API key: CLAUDE_API_KEY")
     
     print(f"✓ Claude API key configured: {claude_key[:20]}...")
+    print(f"✓ Cache system initialized")
     
     try:
         await startup_mcp_servers()
@@ -751,13 +86,92 @@ async def on_shutdown():
     print("✓ Shutdown complete")
 
 
+async def resolve_market_id(query: str, request_id: str) -> Optional[str]:
+    """
+    Resolve a market ID from a query that mentions a market title.
+    Returns market_id if found, None otherwise.
+    """
+    print(f"[{request_id}] Attempting to resolve market ID from query...")
+    
+    try:
+        # Fetch available markets
+        markets_raw = await fetch_markets(limit=50)
+        
+        # Handle different response formats
+        if isinstance(markets_raw, dict):
+            markets = markets_raw.get('data', []) or markets_raw.get('markets', []) or []
+        elif isinstance(markets_raw, list):
+            markets = markets_raw
+        else:
+            return None
+        
+        if not markets:
+            return None
+        
+        # Build market list with titles
+        market_list = []
+        for m in markets:
+            if not isinstance(m, dict):
+                continue
+            market_list.append({
+                'id': m.get('id', 'unknown'),
+                'title': m.get('title', 'Untitled')
+            })
+        
+        # Use Claude to find the best matching market
+        system_prompt = """You are a market matching assistant.
+Given a user query and a list of markets, determine if the query is referring to a specific market.
+If yes, return the market ID. If no clear match, return null.
+Respond with ONLY a JSON object: {"market_id": "..." or null, "confidence": 0-1}"""
+
+        user_prompt = f"""User Query: {query}
+
+Available Markets:
+{json.dumps(market_list, indent=2)}
+
+Does this query refer to one of these markets? If yes, which one?
+Output ONLY JSON."""
+
+        response = await call_claude(system_prompt, user_prompt, temperature=0.1, max_tokens=300)
+        result = extract_first_json_block(response)
+        
+        if result and result.get('market_id') and result.get('confidence', 0) > 0.5:
+            market_id = result['market_id']
+            print(f"[{request_id}] ✓ Resolved market ID: {market_id} (confidence: {result.get('confidence')})")
+            return market_id
+        
+        # Fallback: fuzzy string matching
+        query_lower = query.lower()
+        for m in market_list:
+            title_lower = m['title'].lower()
+            # Check if significant portion of title is in query or vice versa
+            if len(title_lower) > 10:
+                if title_lower in query_lower or query_lower in title_lower:
+                    print(f"[{request_id}] ✓ Resolved via fuzzy match: {m['id']}")
+                    return m['id']
+        
+        print(f"[{request_id}] ⚠️  Could not resolve market ID from query")
+        return None
+        
+    except Exception as e:
+        print(f"[{request_id}] ⚠️  Market ID resolution failed: {e}")
+        return None
+
+
 async def classify_chat_intent(query: str, market_id: Optional[str]) -> Dict[str, Any]:
     """Classify user intent with fallback heuristics"""
     
     # Try Claude classification first
     classification_system = """You are a query classifier for a Polymarket analysis system.
-Classify into: general_qa, dashboard_generation, or out_of_scope
-Respond with JSON: {"intent": "...", "reason": "..."}"""
+Classify into: general_qa, bet_search, bet_info, dashboard_generation, or out_of_scope
+
+- general_qa: Questions about how Polymarket works
+- bet_search: Looking for bets/markets on a topic (e.g., "bets about AI", "show me crypto markets")
+- bet_info: Asking about a specific bet/market (e.g., "tell me about market X")
+- dashboard_generation: Requesting detailed analysis/dashboard
+- out_of_scope: Unrelated to Polymarket
+
+Respond with JSON: {"intent": "...", "reason": "...", "search_topic": "..." (only for bet_search)}"""
 
     classification_prompt = f"""Query: {query}
 Market ID provided: {"Yes" if market_id else "No"}
@@ -784,7 +198,27 @@ Classify this query."""
         if 'polymarket' not in query_lower:
             return {"intent": "out_of_scope", "reason": "unrelated topic"}
     
-    dashboard_keywords = ['analyze', 'dashboard', 'should i', 'risk', 'insight']
+    # Check for bet search patterns
+    bet_search_patterns = ['bets about', 'bets on', 'markets about', 'markets on', 
+                          'show me', 'find', 'list', 'search for', 'what are']
+    if any(pattern in query_lower for pattern in bet_search_patterns):
+        # Extract search topic
+        for pattern in bet_search_patterns:
+            if pattern in query_lower:
+                topic = query_lower.split(pattern)[1].strip().split()[0:3]
+                return {"intent": "bet_search", "reason": "search request", 
+                       "search_topic": " ".join(topic)}
+    
+    # Check for bet info patterns
+    bet_info_patterns = ['tell me about', 'what is', 'information about', 'details on', 'info on']
+    if any(pattern in query_lower for pattern in bet_info_patterns):
+        if market_id:
+            return {"intent": "bet_info", "reason": "info request with market_id"}
+        else:
+            return {"intent": "bet_search", "reason": "info request needs search", 
+                   "search_topic": query_lower.split(bet_info_patterns[0])[1].strip() if bet_info_patterns[0] in query_lower else query}
+    
+    dashboard_keywords = ['analyze', 'dashboard', 'should i', 'risk', 'insight', 'analysis']
     if market_id or any(k in query_lower for k in dashboard_keywords):
         return {"intent": "dashboard_generation", "reason": "analysis request"}
     
@@ -818,6 +252,163 @@ Answer in EXACTLY 3 sentences. Be clear and informative."""
     except Exception as e:
         print(f"[{request_id}] ✗ Error: {e}")
         return "I apologize, but I'm having trouble processing your question. Polymarket is a prediction market platform where users trade on event outcomes. Please try rephrasing your question."
+
+
+async def handle_bet_search(query: str, search_topic: str, request_id: str) -> Dict[str, Any]:
+    """Search for bets/markets on a specific topic"""
+    
+    print(f"[{request_id}] Searching for bets about: {search_topic}")
+    
+    try:
+        # Fetch markets from Polymarket API
+        markets_raw = await fetch_markets(limit=20)
+        
+        # Ensure markets is a list and handle different response formats
+        if isinstance(markets_raw, dict):
+            markets = markets_raw.get('data', []) or markets_raw.get('markets', []) or []
+        elif isinstance(markets_raw, list):
+            markets = markets_raw
+        else:
+            markets = []
+        
+        if not markets:
+            print(f"[{request_id}] ⚠️  No markets returned from API")
+            return {
+                "search_topic": search_topic,
+                "count": 0,
+                "markets": []
+            }
+        
+        print(f"[{request_id}] Fetched {len(markets)} markets from API")
+        
+        # Build clean market list for Claude
+        clean_markets = []
+        for m in markets:
+            if not isinstance(m, dict):
+                continue
+            clean_markets.append({
+                'id': m.get('id', 'unknown'),
+                'title': m.get('title', 'Untitled'),
+                'description': (m.get('description') or '')[:200],
+                'currentPrice': m.get('currentPrice', m.get('lastPrice', 0.5)),
+                'volume24hr': m.get('volume24hr', m.get('volume', 0))
+            })
+        
+        if not clean_markets:
+            print(f"[{request_id}] ⚠️  No valid markets after cleaning")
+            return {
+                "search_topic": search_topic,
+                "count": 0,
+                "markets": []
+            }
+        
+        # Filter markets by search topic using Claude
+        system_prompt = """You are a market search assistant.
+Given a list of prediction markets and a search topic, identify the most relevant markets.
+Return ONLY a JSON array of market objects that match the topic."""
+
+        user_prompt = f"""Search Topic: {search_topic}
+
+Available Markets:
+{json.dumps(clean_markets, indent=2)}
+
+Return a JSON array of the 5-10 most relevant markets. Include id, title, description, currentPrice, volume24hr.
+Output ONLY the JSON array."""
+
+        print(f"[{request_id}] Filtering markets with Claude...")
+        response = await call_claude(system_prompt, user_prompt, temperature=0.2, max_tokens=2000)
+        
+        filtered_markets = extract_first_json_block(response)
+        
+        if not filtered_markets or not isinstance(filtered_markets, list):
+            # Fallback: simple keyword matching
+            print(f"[{request_id}] Using fallback keyword matching...")
+            filtered_markets = []
+            topic_lower = search_topic.lower()
+            for m in clean_markets[:15]:
+                title = (m.get('title') or '').lower()
+                desc = (m.get('description') or '').lower()
+                if topic_lower in title or topic_lower in desc:
+                    filtered_markets.append(m)
+        
+        print(f"[{request_id}] ✓ Found {len(filtered_markets)} relevant markets")
+        
+        return {
+            "search_topic": search_topic,
+            "count": len(filtered_markets),
+            "markets": filtered_markets[:10]  # Limit to top 10
+        }
+        
+    except Exception as e:
+        print(f"[{request_id}] ✗ Search failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Bet search failed: {str(e)}")
+
+
+async def handle_bet_info(query: str, market_id: str, request_id: str) -> Dict[str, Any]:
+    """Get basic information about a specific bet"""
+    
+    print(f"[{request_id}] Fetching info for: {market_id}")
+    
+    try:
+        # Fetch market details
+        market = await fetch_market_detail(market_id)
+        print(f"[{request_id}] ✓ Market: {market.get('title', '')[:50]}...")
+        
+        # Fetch related news
+        try:
+            news = await fetch_news_for_market(market.get("title", ""), page_size=5)
+            print(f"[{request_id}] ✓ Found {len(news)} news articles")
+        except:
+            news = []
+        
+        # Generate summary using Claude
+        system_prompt = """You are a prediction market information assistant.
+Provide a clear, concise summary of a market in 3-4 paragraphs covering:
+1. What the market is about
+2. Current status (price, volume, trending)
+3. Key factors or recent developments
+4. Overall market sentiment"""
+
+        user_prompt = f"""Market Information:
+Title: {market.get('title', '')}
+Description: {market.get('description', '')}
+Current Price: {market.get('currentPrice', 0.5)}
+Volume 24h: ${market.get('volume24hr', 0):,.0f}
+End Date: {market.get('endDate', 'Unknown')}
+
+Recent News ({len(news)} articles):
+{json.dumps([{'title': n.get('title', ''), 'source': n.get('source', {}).get('name', '')} for n in news[:3]], indent=2)}
+
+Provide a 3-4 paragraph summary of this market."""
+
+        print(f"[{request_id}] Generating summary...")
+        summary = await call_claude(system_prompt, user_prompt, temperature=0.3, max_tokens=600)
+        
+        print(f"[{request_id}] ✓ Info generated")
+        
+        return {
+            "market_id": market_id,
+            "title": market.get('title', ''),
+            "description": market.get('description', ''),
+            "currentPrice": market.get('currentPrice', 0.5),
+            "volume24hr": market.get('volume24hr', 0),
+            "endDate": market.get('endDate', 'Unknown'),
+            "summary": summary.strip(),
+            "news_count": len(news),
+            "top_news": [
+                {
+                    "title": n.get('title', ''),
+                    "source": n.get('source', {}).get('name', ''),
+                    "publishedAt": n.get('publishedAt', '')
+                } for n in news[:3]
+            ]
+        }
+        
+    except Exception as e:
+        print(f"[{request_id}] ✗ Info fetch failed: {e}")
+        raise HTTPException(status_code=404, detail=f"Could not fetch market info: {str(e)}")
 
 
 async def handle_dashboard_generation(query: str, market_id: str, request_id: str) -> Dict[str, Any]:
@@ -992,16 +583,7 @@ Output ONLY JSON."""
 
 @app.post("/chat")
 async def post_chat(payload: Dict[str, Any]):
-    """
-    Main chat endpoint
-    
-    Request: {"query": "...", "market_id": "..."}
-    
-    Response types:
-    - {"type": "chat", "response": "3 sentences"}
-    - {"type": "dashboard", "data": {...complete dashboard...}}
-    - {"type": "error", "message": "..."}
-    """
+    """Main chat endpoint with simple caching"""
     request_id = short_id()
     start_ts = time.time()
     
@@ -1011,56 +593,169 @@ async def post_chat(payload: Dict[str, Any]):
     
     market_id = payload.get("market_id")
     
-    print(f"\n[{request_id}] Chat: {query[:60]}...")
-    if market_id:
-        print(f"[{request_id}] Market: {market_id}")
+    print(f"\n[{request_id}] Chat: {query}")
     
-    # Classify intent
+    # CHECK CACHE FIRST
+    cached = get_cached(query)
+    if cached:
+        elapsed = time.time() - start_ts
+        print(f"[{request_id}] ✓ Returned from cache in {elapsed:.2f}s\n")
+        return cached
+    
+    # NOT IN CACHE - PROCESS NORMALLY
+    if market_id:
+        print(f"[{request_id}] Market ID provided: {market_id}")
+    
+    # Classify intent FIRST (before resolving market_id)
     classification = await classify_chat_intent(query, market_id)
     intent = classification.get("intent", "general_qa")
+    search_topic = classification.get("search_topic", "")
     
     print(f"[{request_id}] Intent: {intent}")
+    if search_topic:
+        print(f"[{request_id}] Search topic: {search_topic}")
+    
+    # If no market_id provided but intent suggests we need one, try to resolve it
+    if not market_id and intent in ["bet_info", "dashboard_generation"]:
+        print(f"[{request_id}] No market_id provided, attempting resolution...")
+        resolved_id = await resolve_market_id(query, request_id)
+        if resolved_id:
+            market_id = resolved_id
+            print(f"[{request_id}] ✓ Using resolved market_id: {market_id}")
+        else:
+            print(f"[{request_id}] Could not resolve market_id, may switch to search...")
     
     try:
+        response = None
+        
         if intent == "out_of_scope":
-            return {
+            response = {
                 "type": "error",
                 "message": "I'm designed to help with Polymarket-related questions and market analysis. Please ask about prediction markets or request market analysis."
             }
         
         elif intent == "general_qa":
-            response = await handle_general_qa(query, request_id)
-            elapsed = time.time() - start_ts
-            print(f"[{request_id}] ✓ Completed in {elapsed:.2f}s\n")
+            answer = await handle_general_qa(query, request_id)
+            response = {"type": "chat", "response": answer}
+        
+        elif intent == "bet_search":
+            if not search_topic:
+                search_topic = query
             
-            return {
-                "type": "chat",
-                "response": response
-            }
+            search_results = await handle_bet_search(query, search_topic, request_id)
+            response = {"type": "bet_search", "data": search_results}
+        
+        elif intent == "bet_info":
+            if not market_id:
+                # If we still don't have a market_id, try searching
+                print(f"[{request_id}] No market_id available, falling back to search...")
+                search_results = await handle_bet_search(query, query, request_id)
+                
+                if search_results['count'] > 0:
+                    response = {
+                        "type": "bet_search",
+                        "data": search_results,
+                        "message": "I found these markets. Please specify which one you'd like to know more about."
+                    }
+                else:
+                    response = {
+                        "type": "error",
+                        "message": "I couldn't find a market matching your query. Please try rephrasing or provide a market_id."
+                    }
+            else:
+                info = await handle_bet_info(query, market_id, request_id)
+                response = {"type": "bet_info", "data": info}
         
         elif intent == "dashboard_generation":
             if not market_id:
-                return {
-                    "type": "error",
-                    "message": "To generate a dashboard, please provide a market_id."
-                }
-            
-            dashboard = await handle_dashboard_generation(query, market_id, request_id)
-            elapsed = time.time() - start_ts
-            print(f"[{request_id}] ✓ Completed in {elapsed:.2f}s\n")
-            
-            return {
-                "type": "dashboard",
-                "data": dashboard
-            }
+                # Try searching first
+                print(f"[{request_id}] No market_id for dashboard, trying search...")
+                search_results = await handle_bet_search(query, query, request_id)
+                
+                if search_results['count'] > 0:
+                    response = {
+                        "type": "bet_search",
+                        "data": search_results,
+                        "message": "I found these markets. Please specify which one you'd like a dashboard for."
+                    }
+                else:
+                    response = {
+                        "type": "error",
+                        "message": "To generate a dashboard, please provide a market_id or specify which market you'd like analyzed."
+                    }
+            else:
+                dashboard = await handle_dashboard_generation(query, market_id, request_id)
+                response = {"type": "dashboard", "data": dashboard}
         
         else:
             raise HTTPException(status_code=500, detail="Unknown intent")
+        
+        # STORE IN CACHE
+        set_cache(query, response)
+        
+        elapsed = time.time() - start_ts
+        print(f"[{request_id}] ✓ Completed in {elapsed:.2f}s\n")
+        
+        return response
     
     except HTTPException:
         raise
     except Exception as e:
         print(f"[{request_id}] ✗ Failed: {e}\n")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/search")
+async def get_search(topic: str = Query(..., description="Search topic (e.g., 'AI', 'crypto', 'politics')")):
+    """
+    Search for bets/markets on a specific topic
+    
+    Returns: {"topic": "...", "count": N, "markets": [...]}
+    """
+    request_id = short_id()
+    print(f"\n[{request_id}] Search request: {topic}")
+    
+    try:
+        results = await handle_bet_search(
+            query=f"Find bets about {topic}",
+            search_topic=topic,
+            request_id=request_id
+        )
+        
+        return {
+            "request_id": request_id,
+            "timestamp": utc_now_iso(),
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/bet/{market_id}")
+async def get_bet_info(market_id: str):
+    """
+    Get information about a specific bet
+    
+    Returns: {"title": "...", "summary": "...", "currentPrice": ..., ...}
+    """
+    request_id = short_id()
+    print(f"\n[{request_id}] Bet info request: {market_id}")
+    
+    try:
+        info = await handle_bet_info(
+            query=f"Get info for {market_id}",
+            market_id=market_id,
+            request_id=request_id
+        )
+        
+        return {
+            "request_id": request_id,
+            "timestamp": utc_now_iso(),
+            "info": info
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1093,14 +788,27 @@ async def health():
     import os
     from mcp import _mcp_manager
     
+    cache = load_cache()
+    
     return {
         "ok": True,
         "ts": utc_now_iso(),
         "services": {
             "claude_api_key": bool(os.getenv("CLAUDE_API_KEY")),
             "mcp_initialized": _mcp_manager.initialized
+        },
+        "cache": {
+            "entries": len(cache)
         }
     }
+
+
+@app.post("/cache/clear")
+async def clear_cache_endpoint():
+    """Clear the entire cache"""
+    save_cache({})
+    print("🗑️ Cache cleared")
+    return {"message": "Cache cleared successfully", "timestamp": utc_now_iso()}
 
 
 @app.get("/")
@@ -1108,16 +816,40 @@ async def root():
     """API info"""
     return {
         "service": "PolySage API",
-        "version": "3.0-production",
+        "version": "4.1-enhanced",
         "features": [
-            "Two-type chat (Q&A / Dashboard)",
-            "Exact dashboard format for frontend",
+            "General Q&A about Polymarket",
+            "Bet search by topic",
+            "Bet information retrieval",
+            "Full dashboard generation",
+            "Automatic market ID resolution from titles ⭐ NEW",
             "Claude Sonnet 4.5 powered",
             "MCP integration"
         ],
+        "chat_types": {
+            "general_qa": "Ask questions about Polymarket - get 3-sentence answers",
+            "bet_search": "Search for bets on a topic - get list of relevant markets",
+            "bet_info": "Get information about a specific bet - get summary and details",
+            "dashboard_generation": "Request detailed analysis - get full dashboard JSON"
+        },
         "endpoints": {
-            "POST /chat": "Main endpoint - returns chat or dashboard",
-            "GET /dashboard?market_id=X": "Direct dashboard",
+            "POST /chat": "Main endpoint - handles all query types (auto-resolves market IDs)",
+            "GET /search?topic=X": "Search for bets on topic X",
+            "GET /bet/{market_id}": "Get info about specific bet",
+            "GET /dashboard?market_id=X": "Generate dashboard for market",
             "GET /health": "Health check"
+        },
+        "example_queries": {
+            "general": "How does Polymarket work?",
+            "search": "Show me bets about AI",
+            "info_by_title": "Tell me about 'Will GPT-5 be released in 2025?' ⭐ NEW - No market_id needed!",
+            "info_by_id": "Tell me about market abc123",
+            "dashboard_by_title": "Analyze 'Will Bitcoin reach $100k?' ⭐ NEW",
+            "dashboard_by_id": "Analyze market abc123"
+        },
+        "smart_features": {
+            "title_resolution": "Just mention the market title - system finds the market_id automatically",
+            "fuzzy_matching": "Works even with partial titles",
+            "fallback_search": "If exact match not found, returns similar markets to choose from"
         }
     }
