@@ -1,0 +1,77 @@
+{
+  "betOptions": ["yes", "no", "maybe"],
+  "volumeData": {
+    "24h": [
+      { "time": "00:00", "volume": 45000 },
+      { "time": "04:00", "volume": 32000 },
+      { "time": "08:00", "volume": 58000 },
+      { "time": "12:00", "volume": 72000 },
+      { "time": "16:00", "volume": 65000 },
+      { "time": "20:00", "volume": 51000 }
+    ],
+    "7d": [
+      { "time": "Mon", "volume": 120000 },
+      { "time": "Tue", "volume": 95000 },
+      { "time": "Wed", "volume": 142000 },
+      { "time": "Thu", "volume": 108000 },
+      { "time": "Fri", "volume": 165000 },
+      { "time": "Sat", "volume": 88000 },
+      { "time": "Sun", "volume": 102000 }
+    ],
+    "1m": [
+      { "time": "Week 1", "volume": 580000 },
+      { "time": "Week 2", "volume": 620000 },
+      { "time": "Week 3", "volume": 490000 },
+      { "time": "Week 4", "volume": 710000 }
+    ]
+  },
+  "oddsComparison": {
+    "yes": { "polymarket": 65, "news": 58, "expert": 62 },
+    "no": { "polymarket": 30, "news": 35, "expert": 32 },
+    "maybe": { "polymarket": 5, "news": 7, "expert": 6 }
+  },
+  "shiftTimeline": [
+    { "date": "Nov 1", "polymarket": 45, "news": 48 },
+    { "date": "Nov 2", "polymarket": 48, "news": 50 },
+    { "date": "Nov 3", "polymarket": 52, "news": 51 },
+    { "date": "Nov 4", "polymarket": 58, "news": 54 },
+    { "date": "Nov 5", "polymarket": 62, "news": 56 },
+    { "date": "Nov 6", "polymarket": 65, "news": 58 }
+  ],
+  "news": [
+    { "title": "Major development in prediction markets", "url": "#", "source": "MarketWatch", "date": "2 hours ago" },
+    { "title": "Analysis: Betting trends shift dramatically", "url": "#", "source": "Bloomberg", "date": "5 hours ago" },
+    { "title": "Expert predictions for upcoming events", "url": "#", "source": "Reuters", "date": "1 day ago" }
+  ],
+  "largeBets": [
+    { "option": "Yes", "amount": "$125,000", "time": "2 hours ago", "impact": "+2.3%" },
+    { "option": "No", "amount": "$89,000", "time": "4 hours ago", "impact": "-1.1%" },
+    { "option": "Yes", "amount": "$156,000", "time": "6 hours ago", "impact": "+3.1%" }
+  ],
+  "sentimentTimeline": [
+    { "date": "Nov 1", "sentiment": 45, "events": "Initial announcement" },
+    { "date": "Nov 3", "sentiment": 62, "events": "Positive media coverage" },
+    { "date": "Nov 5", "sentiment": 55, "events": "Expert skepticism" },
+    { "date": "Nov 7", "sentiment": 68, "events": "Strong market confidence" }
+  ],
+  "healthScore": 78,
+  "liquidityScore": 8.5,
+  "recommendations": {
+    "safe": {
+      "title": "Recommended: YES",
+      "color": "green",
+      "desc": "Based on expert consensus (62%) and strong liquidity, betting YES offers the best risk-reward ratio. Market health is good and sentiment is positive with minimal manipulation risk."
+    },
+    "aggressive": {
+      "title": "Recommended: YES (High Stakes)",
+      "color": "red",
+      "desc": "Polymarket shows 65% probability with upward momentum. Recent whale activity supports this position. Gap analysis suggests potential for further price movement. Higher risk but maximum reward potential."
+    }
+  },
+  "aiSummary": [
+    "Market Confidence: High. The betting market shows strong conviction with 78/100 health score and excellent liquidity (8.5/10). This indicates robust participation and reliable price discovery.",
+    "Trend Analysis: Bullish momentum detected. Polymarket odds have increased from 45% to 65% over the past week, supported by positive news sentiment and expert consensus around 62%.",
+    "Risk Assessment: Moderate. The 7% gap between Polymarket and news sources suggests some speculative positioning, but recent large bets show institutional confidence. Volume patterns indicate organic growth rather than manipulation.",
+    "Strategic Recommendation: The data supports a YES position for both conservative and aggressive strategies. Safe players should enter at current odds, while aggressive traders may benefit from the upward momentum and whale activity."
+  ]
+}
