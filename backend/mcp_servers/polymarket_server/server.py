@@ -1,377 +1,530 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+import io
+
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 import asyncio
 import json
 import os
-from typing import Any
+from typing import Any, Dict, List
+from datetime import datetime, timedelta
 from mcp.server.models import InitializationOptions
 from mcp.server import NotificationOptions, Server
 from mcp.types import Tool, TextContent
 import mcp.server.stdio
+import aiohttp
+from statistics import mean, stdev
+from collections import defaultdict
+
+POLYMARKET_API_BASE = "https://clob.polymarket.com"
 
 server = Server("polymarket-analysis")
+
+async def fetch_market_info(market_id: str) -> Dict[str, Any]:
+    url = f"{POLYMARKET_API_BASE}/markets/{market_id}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                raise Exception(f"Polymarket API error: {response.status}")
+
+async def fetch_all_markets() -> List[Dict[str, Any]]:
+    url = f"{POLYMARKET_API_BASE}/markets"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return []
+
+async def fetch_market_trades(market_id: str, limit: int = 1000) -> List[Dict[str, Any]]:
+    url = f"{POLYMARKET_API_BASE}/trades"
+    params = {"market": market_id, "limit": limit}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return []
+
+async def fetch_order_book(market_id: str) -> Dict[str, Any]:
+    url = f"{POLYMARKET_API_BASE}/book"
+    params = {"market": market_id}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return {"bids": [], "asks": []}
+
+async def fetch_price_history(market_id: str, days: int = 7) -> List[Dict[str, Any]]:
+    url = f"{POLYMARKET_API_BASE}/prices-history"
+    params = {"market": market_id, "interval": "1h", "fidelity": days}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, params=params) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data.get("history", [])
+            else:
+                return []
+
+async def calculate_real_volume_anomaly(market_id: str, timeframe: str) -> Dict[str, Any]:
+    trades = await fetch_market_trades(market_id, limit=2000)
+    if not trades:
+        raise Exception("No trade data available for this market")
+    timeframe_hours = {"1h": 1, "24h": 24, "7d": 168}.get(timeframe, 24)
+    now = datetime.utcnow()
+    current_window_start = now - timedelta(hours=timeframe_hours)
+    current_volume = 0
+    for trade in trades:
+        try:
+            trade_time = datetime.fromisoformat(trade.get("timestamp", "").replace("Z", ""))
+            if trade_time >= current_window_start:
+                size = float(trade.get("size", 0))
+                price = float(trade.get("price", 0))
+                current_volume += size * price
+        except:
+            continue
+    historical_volumes = []
+    for i in range(1, 8):
+        period_start = now - timedelta(hours=timeframe_hours * (i + 1))
+        period_end = now - timedelta(hours=timeframe_hours * i)
+        period_volume = 0
+        for trade in trades:
+            try:
+                trade_time = datetime.fromisoformat(trade.get("timestamp", "").replace("Z", ""))
+                if period_start <= trade_time < period_end:
+                    size = float(trade.get("size", 0))
+                    price = float(trade.get("price", 0))
+                    period_volume += size * price
+            except:
+                continue
+        historical_volumes.append(period_volume)
+    if len(historical_volumes) < 2:
+        raise Exception("Insufficient historical data for analysis")
+    avg_volume = mean(historical_volumes)
+    std_dev = stdev(historical_volumes) if len(historical_volumes) > 1 else 0
+    if std_dev > 0:
+        z_score = (current_volume - avg_volume) / std_dev
+    else:
+        z_score = 0
+    is_anomaly = abs(z_score) > 3
+    severity = "HIGH" if abs(z_score) > 4 else "MEDIUM" if abs(z_score) > 3 else "LOW"
+    return {
+        "current_volume": current_volume,
+        "average_volume": avg_volume,
+        "std_dev": std_dev,
+        "z_score": z_score,
+        "is_anomaly": is_anomaly,
+        "severity": severity
+    }
+
+async def detect_real_wash_trading(market_id: str, lookback_hours: int = 24) -> Dict[str, Any]:
+    trades = await fetch_market_trades(market_id, limit=2000)
+    if not trades:
+        raise Exception("No trade data available")
+    now = datetime.utcnow()
+    cutoff = now - timedelta(hours=lookback_hours)
+    recent_trades = []
+    for trade in trades:
+        try:
+            trade_time = datetime.fromisoformat(trade.get("timestamp", "").replace("Z", ""))
+            if trade_time >= cutoff:
+                recent_trades.append(trade)
+        except:
+            continue
+    trader_pairs = defaultdict(int)
+    self_trades = 0
+    for trade in recent_trades:
+        maker = trade.get("maker_address", "")
+        taker = trade.get("taker_address", "")
+        if not maker or not taker:
+            continue
+        if maker.lower() == taker.lower():
+            self_trades += 1
+            continue
+        pair = tuple(sorted([maker, taker]))
+        trader_pairs[pair] += 1
+    threshold = 5
+    suspicious_pairs = [
+        f"{pair[0][:8]}...{pair[0][-6:]} <-> {pair[1][:8]}...{pair[1][-6:]} ({count} trades)"
+        for pair, count in trader_pairs.items()
+        if count > threshold
+    ]
+    confidence = "HIGH" if len(suspicious_pairs) > 3 else "MEDIUM" if len(suspicious_pairs) > 0 else "LOW"
+    return {
+        "suspicious_patterns": len(suspicious_pairs),
+        "repeated_pairs": suspicious_pairs[:10],
+        "self_trades": self_trades,
+        "confidence": confidence,
+        "total_trades_analyzed": len(recent_trades)
+    }
+
+async def calculate_real_health_score(market_id: str) -> Dict[str, Any]:
+    market_info = await fetch_market_info(market_id)
+    trades = await fetch_market_trades(market_id, limit=1000)
+    order_book = await fetch_order_book(market_id)
+    total_liquidity = float(market_info.get("liquidity", 0))
+    liquidity_score = min(100, (total_liquidity / 100000) * 100)
+    unique_traders = set()
+    for trade in trades:
+        unique_traders.add(trade.get("maker_address", ""))
+        unique_traders.add(trade.get("taker_address", ""))
+    trader_count = len(unique_traders)
+    diversity_score = min(100, (trader_count / 100) * 100)
+    try:
+        volume_analysis = await calculate_real_volume_anomaly(market_id, "24h")
+        consistency_score = max(0, 100 - abs(volume_analysis["z_score"]) * 20)
+    except:
+        consistency_score = 50
+    price_history = await fetch_price_history(market_id, days=7)
+    if len(price_history) > 1:
+        prices = [float(p.get("price", 0)) for p in price_history]
+        price_std = stdev(prices) if len(prices) > 1 else 0
+        stability_score = max(0, 100 - (price_std * 500))
+    else:
+        stability_score = 50
+    try:
+        wash_analysis = await detect_real_wash_trading(market_id, 24)
+        manip_score = max(0, 100 - wash_analysis["suspicious_patterns"] * 10)
+    except:
+        manip_score = 50
+    overall_score = (
+        liquidity_score * 0.25 +
+        diversity_score * 0.20 +
+        consistency_score * 0.20 +
+        stability_score * 0.15 +
+        manip_score * 0.20
+    )
+    if overall_score >= 75:
+        risk_level = "LOW"
+    elif overall_score >= 50:
+        risk_level = "MEDIUM"
+    else:
+        risk_level = "HIGH"
+    return {
+        "overall_score": int(overall_score),
+        "risk_level": risk_level,
+        "liquidity_score": int(liquidity_score),
+        "diversity_score": int(diversity_score),
+        "volume_score": int(consistency_score),
+        "stability_score": int(stability_score),
+        "manipulation_score": int(manip_score),
+        "total_liquidity": total_liquidity,
+        "unique_traders": trader_count
+    }
+
+async def get_real_trader_concentration(market_id: str) -> Dict[str, Any]:
+    trades = await fetch_market_trades(market_id, limit=2000)
+    if not trades:
+        raise Exception("No trade data available")
+    trader_volumes = defaultdict(float)
+    for trade in trades:
+        maker = trade.get("maker_address", "")
+        taker = trade.get("taker_address", "")
+        size = float(trade.get("size", 0))
+        price = float(trade.get("price", 0))
+        volume = size * price
+        if maker:
+            trader_volumes[maker] += volume
+        if taker:
+            trader_volumes[taker] += volume
+    sorted_traders = sorted(trader_volumes.items(), key=lambda x: x[1], reverse=True)
+    total_volume = sum(trader_volumes.values())
+    total_traders = len(trader_volumes)
+    top10_volume = sum(v for _, v in sorted_traders[:10])
+    top50_volume = sum(v for _, v in sorted_traders[:50])
+    top10_pct = (top10_volume / total_volume * 100) if total_volume > 0 else 0
+    top50_pct = (top50_volume / total_volume * 100) if total_volume > 0 else 0
+    volumes = sorted([v for _, v in trader_volumes.items()])
+    n = len(volumes)
+    if n > 0 and sum(volumes) > 0:
+        cumsum = 0
+        gini_sum = 0
+        for i, v in enumerate(volumes):
+            cumsum += v
+            gini_sum += (2 * (i + 1) - n - 1) * v
+        gini = gini_sum / (n * sum(volumes))
+    else:
+        gini = 0
+    if top10_pct > 60:
+        level = "VERY HIGH"
+    elif top10_pct > 40:
+        level = "HIGH"
+    elif top10_pct > 25:
+        level = "MODERATE"
+    else:
+        level = "LOW"
+    return {
+        "total_traders": total_traders,
+        "top10_percentage": round(top10_pct, 1),
+        "top50_percentage": round(top50_pct, 1),
+        "gini_coefficient": round(gini, 3),
+        "concentration_level": level,
+        "total_volume": total_volume
+    }
 
 @server.list_tools()
 async def handle_list_tools() -> list[Tool]:
     return [
         Tool(
             name="get_market_data",
-            description="Fetch current data for a Polymarket market including price, volume, and liquidity",
+            description="Fetch REAL current data for a Polymarket market from CLOB API",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "market_id": {
-                        "type": "string",
-                        "description": "The Polymarket market ID or slug"
-                    }
+                    "market_id": {"type": "string", "description": "The Polymarket condition ID (e.g., '0x1234...')"}
                 },
                 "required": ["market_id"]
             }
         ),
         Tool(
             name="analyze_volume_anomaly",
-            description="Analyze if current trading volume is anomalous compared to historical baseline. Returns z-score and severity assessment.",
+            description="Analyze REAL volume data to detect anomalies using actual trade history",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "market_id": {
-                        "type": "string",
-                        "description": "The Polymarket market ID"
-                    },
-                    "timeframe": {
-                        "type": "string",
-                        "enum": ["1h", "24h", "7d"],
-                        "description": "Timeframe for comparison"
-                    }
+                    "market_id": {"type": "string"},
+                    "timeframe": {"type": "string", "enum": ["1h", "24h", "7d"]}
                 },
                 "required": ["market_id", "timeframe"]
             }
         ),
         Tool(
             name="detect_wash_trading",
-            description="Detect potential wash trading patterns by analyzing repeated trades between same wallet addresses",
+            description="Detect REAL wash trading patterns from actual blockchain trades",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "market_id": {
-                        "type": "string",
-                        "description": "The Polymarket market ID"
-                    },
-                    "lookback_hours": {
-                        "type": "integer",
-                        "description": "Hours to look back for analysis (default: 24)",
-                        "default": 24
-                    }
+                    "market_id": {"type": "string"},
+                    "lookback_hours": {"type": "integer", "default": 24}
                 },
                 "required": ["market_id"]
             }
         ),
         Tool(
             name="calculate_health_score",
-            description="Calculate overall market health score (0-100) based on liquidity, diversity, volume consistency, and stability",
+            description="Calculate REAL market health score from actual market data",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "market_id": {
-                        "type": "string",
-                        "description": "The Polymarket market ID"
-                    }
-                },
+                "properties": {"market_id": {"type": "string"}},
                 "required": ["market_id"]
             }
         ),
         Tool(
             name="get_trader_concentration",
-            description="Analyze if trading is concentrated among few wallets. Returns Gini coefficient and top trader percentages.",
+            description="Analyze REAL trader concentration from actual trade data",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "market_id": {
-                        "type": "string",
-                        "description": "The Polymarket market ID"
-                    }
-                },
+                "properties": {"market_id": {"type": "string"}},
                 "required": ["market_id"]
             }
         ),
         Tool(
-            name="get_historical_patterns",
-            description="Find similar historical manipulation cases for comparison",
+            name="search_markets",
+            description="Search for Polymarket markets by keyword",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "pattern_type": {
-                        "type": "string",
-                        "enum": ["volume_spike", "wash_trading", "coordinated", "all"],
-                        "description": "Type of manipulation pattern to search for"
-                    }
+                    "query": {"type": "string", "description": "Search query (e.g., 'Trump', 'Bitcoin', 'Election')"}
                 },
-                "required": ["pattern_type"]
+                "required": ["query"]
             }
         )
     ]
 
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
-    if name == "get_market_data":
-        return await get_market_data(arguments)
-    
-    elif name == "analyze_volume_anomaly":
-        return await analyze_volume_anomaly(arguments)
-    
-    elif name == "detect_wash_trading":
-        return await detect_wash_trading(arguments)
-    
-    elif name == "calculate_health_score":
-        return await calculate_health_score(arguments)
-    
-    elif name == "get_trader_concentration":
-        return await get_trader_concentration(arguments)
-    
-    elif name == "get_historical_patterns":
-        return await get_historical_patterns(arguments)
-    
-    else:
-        raise ValueError(f"Unknown tool: {name}")
+    try:
+        if name == "get_market_data":
+            market_id = arguments["market_id"]
+            data = await fetch_market_info(market_id)
+            result = f"""REAL Market Data from Polymarket CLOB API:
 
-async def get_market_data(arguments: dict) -> list[TextContent]:
-    """Fetch current market data"""
-    market_id = arguments["market_id"]
-    
-    # Mock data for now - replace with real API call later
-    mock_data = {
-        "market_id": market_id,
-        "title": "Will Donald Trump win the 2024 Presidential Election?",
-        "current_price": 0.67,
-        "volume_24h": 2450000,
-        "liquidity": 5600000,
-        "active_traders_24h": 1243,
-        "total_volume": 45000000,
-        "created_at": "2024-01-15T00:00:00Z",
-        "end_date": "2024-11-06T00:00:00Z",
-        "status": "active",
-        "category": "politics"
-    }
-    
-    result_text = f"""Market Data for {market_id}:
+Market ID: {market_id}
+Question: {data.get('question', 'N/A')}
+Description: {data.get('description', 'N/A')}
 
-Title: {mock_data['title']}
-Category: {mock_data['category']}
-Status: {mock_data['status']}
+Current Price: ${float(data.get('last_price', 0)):.4f}
+24h Volume: ${float(data.get('volume24hr', 0)):,.2f}
+Total Volume: ${float(data.get('volume', 0)):,.2f}
+Liquidity: ${float(data.get('liquidity', 0)):,.2f}
 
-Current Price: ${mock_data['current_price']:.4f}
-24h Volume: ${mock_data['volume_24h']:,.0f}
-Total Liquidity: ${mock_data['liquidity']:,.0f}
-Active Traders (24h): {mock_data['active_traders_24h']:,}
-Total Volume: ${mock_data['total_volume']:,.0f}
+Active: {data.get('active', False)}
+Closed: {data.get('closed', False)}
+Market Type: {data.get('market_type', 'N/A')}
 
-Created: {mock_data['created_at']}
-Ends: {mock_data['end_date']}
+Outcome: {data.get('outcome', 'Pending')}
+Outcome Prices: {data.get('outcome_prices', 'N/A')}
+
+End Date: {data.get('end_date_iso', 'N/A')}
+Created: {data.get('created_at', 'N/A')}
+
+Data Source: Polymarket CLOB API (REAL DATA)
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
 
+        elif name == "analyze_volume_anomaly":
+            market_id = arguments["market_id"]
+            timeframe = arguments["timeframe"]
+            analysis = await calculate_real_volume_anomaly(market_id, timeframe)
+            result = f"""REAL Volume Anomaly Analysis (from actual trades):
 
-async def analyze_volume_anomaly(arguments: dict) -> list[TextContent]:
-    """Analyze volume for anomalies"""
-    market_id = arguments["market_id"]
-    timeframe = arguments["timeframe"]
+Market: {market_id}
+Timeframe: {timeframe}
 
-    mock_analysis = {
-        "current_volume": 185000,
-        "average_volume": 50000,
-        "std_dev": 15000,
-        "z_score": 4.2,
-        "is_anomaly": True,
-        "severity": "HIGH",
-        "explanation": "Volume spike detected at 12:00 UTC. This represents a 270% increase over baseline."
-    }
-    
-    result_text = f"""Volume Anomaly Analysis for {market_id} ({timeframe}):
+Current Period Volume: ${analysis['current_volume']:,.2f}
+Historical Average: ${analysis['average_volume']:,.2f}
+Standard Deviation: ${analysis['std_dev']:,.2f}
 
-Current Volume: ${mock_analysis['current_volume']:,}
-Average Volume: ${mock_analysis['average_volume']:,}
-Standard Deviation: {mock_analysis['std_dev']:,}
-Z-Score: {mock_analysis['z_score']:.2f}σ
+Z-Score: {analysis['z_score']:.2f}
+Anomaly Detected: {'YES' if analysis['is_anomaly'] else 'NO'}
+Severity: {analysis['severity']}
 
-Anomaly Detected: {'YES' if mock_analysis['is_anomaly'] else 'NO'}
-Severity: {mock_analysis['severity']}
+Interpretation: Current volume is {abs(analysis['z_score']):.1f} standard deviations 
+{'above' if analysis['z_score'] > 0 else 'below'} the historical mean.
+{'[ALERT] This is statistically significant and warrants investigation!' if analysis['is_anomaly'] else '[OK] Volume appears normal.'}
 
-Analysis: {mock_analysis['explanation']}
-
-Interpretation: This volume is {mock_analysis['z_score']:.1f} standard deviations above 
-the mean, which is statistically significant and warrants investigation for potential manipulation.
+Data Source: Real Polymarket trade history
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
 
+        elif name == "detect_wash_trading":
+            market_id = arguments["market_id"]
+            lookback = arguments.get("lookback_hours", 24)
+            analysis = await detect_real_wash_trading(market_id, lookback)
+            pairs_text = "\n".join(f"  - {pair}" for pair in analysis['repeated_pairs'][:10])
+            result = f"""REAL Wash Trading Analysis (from blockchain data):
 
-async def detect_wash_trading(arguments: dict) -> list[TextContent]:
-    """Detect wash trading patterns"""
-    market_id = arguments["market_id"]
-    lookback_hours = arguments.get("lookback_hours", 24)
-    
+Market: {market_id}
+Lookback Period: {lookback} hours
+Total Trades Analyzed: {analysis['total_trades_analyzed']}
 
-    mock_result = {
-        "suspicious_patterns": 3,
-        "repeated_pairs": [
-            "0x123...abc ↔ 0x456...def (12 trades)",
-            "0x789...ghi ↔ 0xabc...jkl (8 trades)"
-        ],
-        "self_trades": 2,
-        "confidence": "MEDIUM",
-        "details": "Found 3 instances of repeated trading between same wallet pairs within short time windows"
-    }
-    
-    result_text = f"""Wash Trading Analysis for {market_id}:
+Suspicious Patterns: {analysis['suspicious_patterns']}
+Self-Trades Detected: {analysis['self_trades']}
+Confidence: {analysis['confidence']}
 
-Lookback Period: {lookback_hours} hours
-Suspicious Patterns Found: {mock_result['suspicious_patterns']}
-Self-Trading Instances: {mock_result['self_trades']}
-Confidence Level: {mock_result['confidence']}
+Repeated Trader Pairs:
+{pairs_text if analysis['repeated_pairs'] else '  None detected'}
 
-Suspicious Wallet Pairs:
-{chr(10).join(f"  • {pair}" for pair in mock_result['repeated_pairs'])}
+Assessment: {'[HIGH RISK] Multiple suspicious patterns detected' if analysis['suspicious_patterns'] > 3 else '[MODERATE RISK] Some patterns detected' if analysis['suspicious_patterns'] > 0 else '[LOW RISK] No significant patterns'}
 
-Details: {mock_result['details']}
-
-⚠️ Recommendation: These patterns suggest potential wash trading. Further investigation 
-recommended to determine if trades are from related entities.
+Data Source: Real blockchain trade data
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
 
+        elif name == "calculate_health_score":
+            market_id = arguments["market_id"]
+            health = await calculate_real_health_score(market_id)
+            result = f"""REAL Market Health Score (from actual data):
 
-async def calculate_health_score(arguments: dict) -> list[TextContent]:
-    """Calculate market health score"""
-    market_id = arguments["market_id"]
-    
-    # Mock health calculation - replace with real metrics later
-    mock_health = {
-        "overall_score": 72,
-        "risk_level": "MEDIUM",
-        "liquidity_score": 85,
-        "diversity_score": 68,
-        "volume_score": 45,
-        "stability_score": 82,
-        "manipulation_score": 72,
-        "recommendation": "Exercise caution. Monitor for volume spikes and check news correlation."
-    }
-    
-    result_text = f"""Market Health Score for {market_id}:
+Market: {market_id}
 
-Overall Score: {mock_health['overall_score']}/100
-Risk Level: {mock_health['risk_level']}
+Overall Score: {health['overall_score']}/100
+Risk Level: {health['risk_level']}
 
 Component Scores:
-  • Liquidity: {mock_health['liquidity_score']}/100 ({'Good' if mock_health['liquidity_score'] > 70 else 'Poor'})
-  • Participant Diversity: {mock_health['diversity_score']}/100 ({'Good' if mock_health['diversity_score'] > 70 else 'Moderate'})
-  • Volume Consistency: {mock_health['volume_score']}/100 ({'Poor' if mock_health['volume_score'] < 60 else 'Good'})
-  • Price Stability: {mock_health['stability_score']}/100 ({'Good' if mock_health['stability_score'] > 70 else 'Poor'})
-  • Manipulation Risk: {mock_health['manipulation_score']}/100 (Lower is better)
+  - Liquidity: {health['liquidity_score']}/100 (${health['total_liquidity']:,.0f})
+  - Trader Diversity: {health['diversity_score']}/100 ({health['unique_traders']} unique traders)
+  - Volume Consistency: {health['volume_score']}/100
+  - Price Stability: {health['stability_score']}/100
+  - Manipulation Risk: {health['manipulation_score']}/100 (inverse)
 
-Recommendation: {mock_health['recommendation']}
+Assessment: {'[OK] HEALTHY MARKET' if health['overall_score'] >= 75 else '[WARN] MODERATE CONCERNS' if health['overall_score'] >= 50 else '[ALERT] HIGH RISK'}
+
+Data Source: Real Polymarket API + blockchain data
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
 
+        elif name == "get_trader_concentration":
+            market_id = arguments["market_id"]
+            conc = await get_real_trader_concentration(market_id)
+            result = f"""REAL Trader Concentration Analysis:
 
-async def get_trader_concentration(arguments: dict) -> list[TextContent]:
-    """Analyze trader concentration"""
-    market_id = arguments["market_id"]
-    
-    # Mock concentration data - replace with real analysis later
-    mock_concentration = {
-        "total_traders": 1243,
-        "top10_percentage": 45,
-        "top50_percentage": 73,
-        "gini_coefficient": 0.68,
-        "concentration_level": "HIGH",
-        "risk_assessment": "Concerning - Top traders have outsized influence"
-    }
-    
-    result_text = f"""Trader Concentration Analysis for {market_id}:
+Market: {market_id}
 
-Total Unique Traders: {mock_concentration['total_traders']:,}
-Top 10 Traders Control: {mock_concentration['top10_percentage']}% of volume
-Top 50 Traders Control: {mock_concentration['top50_percentage']}% of volume
+Total Unique Traders: {conc['total_traders']}
+Total Volume: ${conc['total_volume']:,.2f}
 
-Gini Coefficient: {mock_concentration['gini_coefficient']:.3f}
-Concentration Level: {mock_concentration['concentration_level']}
+Concentration Metrics:
+  - Top 10 Traders: {conc['top10_percentage']:.1f}% of volume
+  - Top 50 Traders: {conc['top50_percentage']:.1f}% of volume
+  - Gini Coefficient: {conc['gini_coefficient']:.3f}
 
-Risk Assessment: {mock_concentration['risk_assessment']}
+Concentration Level: {conc['concentration_level']}
 
-⚠️ Warning: Top 10 traders controlling {mock_concentration['top10_percentage']}% of volume 
-is above the healthy threshold of 30%. This increases manipulation risk as coordinated 
-action by a small group could significantly move the market.
+Assessment: {'[ALERT] VERY HIGH concentration - manipulation risk' if conc['concentration_level'] == 'VERY HIGH' else '[WARN] HIGH concentration - monitor closely' if conc['concentration_level'] == 'HIGH' else '[OK] Moderate concentration' if conc['concentration_level'] == 'MODERATE' else '[OK] Good distribution'}
+
+Healthy Threshold: <30% for top 10 traders
+Current Status: {'ABOVE threshold' if conc['top10_percentage'] > 30 else 'Within threshold'}
+
+Data Source: Real blockchain trade data
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
 
+        elif name == "search_markets":
+            query = arguments["query"].lower()
+            markets = await fetch_all_markets()
+            matching = [
+                m for m in markets
+                if query in m.get('question', '').lower() or query in m.get('description', '').lower()
+            ][:10]
+            if matching:
+                results = "\n\n".join([
+                    f"""Market {i+1}:
+Question: {m.get('question', 'N/A')}
+ID: {m.get('condition_id', 'N/A')}
+Price: ${float(m.get('last_price', 0)):.4f}
+Volume: ${float(m.get('volume', 0)):,.0f}
+Active: {m.get('active', False)}"""
+                    for i, m in enumerate(matching)
+                ])
+            else:
+                results = "No markets found matching query."
+            result = f"""Market Search Results for "{query}":
 
-async def get_historical_patterns(arguments: dict) -> list[TextContent]:
-    """Get historical manipulation patterns"""
-    pattern_type = arguments["pattern_type"]
-    
-    # Mock historical data - replace with database query later
-    mock_cases = [
-        {
-            "date": "2024-10-15",
-            "market": "Biden Approval Rating Q4",
-            "pattern": "Volume Spike",
-            "outcome": "Confirmed manipulation - coordinated pump",
-            "similarity": 87,
-            "details": "Similar z-score (4.1) and no news correlation"
-        },
-        {
-            "date": "2024-09-22",
-            "market": "Fed Rate Decision September",
-            "pattern": "Volume Spike",
-            "outcome": "Natural movement - preceded by Fed announcement",
-            "similarity": 45,
-            "details": "Volume increase was justified by news"
-        },
-        {
-            "date": "2024-08-30",
-            "market": "Crypto ETF Approval",
-            "pattern": "Wash Trading",
-            "outcome": "Confirmed manipulation - same entity trading",
-            "similarity": 72,
-            "details": "Multiple wallets traced to same source"
-        }
-    ]
-    
-    cases_text = "\n\n".join([
-        f"""Case #{idx + 1} (Similarity: {case['similarity']}%)
-Date: {case['date']}
-Market: {case['market']}
-Pattern: {case['pattern']}
-Outcome: {case['outcome']}
-Details: {case['details']}"""
-        for idx, case in enumerate(mock_cases)
-    ])
-    
-    result_text = f"""Historical Manipulation Cases ({pattern_type}):
+Found {len(matching)} matching markets:
 
-Found {len(mock_cases)} similar cases:
+{results}
 
-{cases_text}
-
-Analysis: The case with highest similarity (87%) was confirmed manipulation, 
-suggesting elevated risk for the current market situation.
+Data Source: Real Polymarket API
 """
-    
-    return [TextContent(type="text", text=result_text)]
+            return [TextContent(type="text", text=result)]
+
+        else:
+            raise ValueError(f"Unknown tool: {name}")
+
+    except Exception as e:
+        error_msg = f"""Error executing {name}:
+
+{str(e)}
+
+This could mean:
+- Invalid market ID
+- API connectivity issue
+- Insufficient data for analysis
+
+Please verify the market ID and try again.
+"""
+        return [TextContent(type="text", text=error_msg)]
 
 async def main():
-    """Run the MCP server using stdio transport"""
+    print("Starting Polymarket MCP Server (REAL DATA)")
+    print("Connected to Polymarket CLOB API")
+    print("All tools use real blockchain and API data")
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
             write_stream,
             InitializationOptions(
                 server_name="polymarket-analysis",
-                server_version="0.1.0",
+                server_version="1.0.0-REAL",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},

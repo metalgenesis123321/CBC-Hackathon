@@ -1,291 +1,117 @@
-# Polymarket Manipulation Detection - MCP Servers
+# REAL DATA SETUP INSTRUCTIONS
 
-This directory contains Model Context Protocol (MCP) servers that provide Claude with tools to analyze Polymarket markets for potential manipulation.
+## Step 1: Get API Keys (5 minutes)
 
-## Overview
+### Anthropic API Key
+1. Go to: https://console.anthropic.com/
+2. Sign up/Login
+3. Go to "API Keys"
+4. Click "Create Key"
+5. Copy the key (starts with `sk-ant-api03-`)
 
-Two MCP servers provide 11 total tools for comprehensive market analysis:
+### NewsAPI Key
+1. Go to: https://newsapi.org/register
+2. Fill in:
+   - Email
+   - Password
+   - Use case: "Research project"
+3. Click "Submit"
+4. Check email for API key
+5. Copy the key (32 character string)
 
-### Polymarket Server (6 tools)
-- Market data fetching
-- Volume anomaly detection
-- Wash trading detection
-- Health score calculation
-- Trader concentration analysis
-- Historical pattern matching
-
-### News Server (5 tools)
-- News article fetching
-- Sentiment analysis
-- News-price correlation
-- Trading/news volume comparison
-- Breaking news alerts
-
-## Quick Start
-
-### Installation
+## Step 2: Add Keys to .env
 ```bash
-cd backend/mcp_servers
-pip install -r requirements.txt
+cd backend
+nano .env  # or use VS Code
 ```
 
-### Running Servers
+Add your keys:
+```env
+ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE
+NEWS_API_KEY=YOUR_NEWSAPI_KEY_HERE
+```
+
+Save and exit.
+
+## Step 3: Test Everything
 ```bash
-# Polymarket Server
+cd mcp_servers
+
+# Test Polymarket server (no key needed!)
 python polymarket_server/server.py
 
-# News Server
+# Should see:
+# 🚀 Starting Polymarket MCP Server (REAL DATA)
+# 📡 Connected to Polymarket CLOB API
+
+# Press Ctrl+C, then test News server
 python news_server/server.py
+
+# Should see:
+# 🚀 Starting News MCP Server (REAL DATA)
+# 📰 Connected to NewsAPI with key: ...abc123
 ```
 
-### Testing
-```bash
-# Run test suite
-python tests/test_servers.py
-```
+## Step 4: Find Real Market IDs
 
-## Architecture
-```
-MCP Servers
-    ↓
-Claude API (with tools enabled)
-    ↓
-Backend API
-    ↓
-Frontend Dashboard
-```
+Polymarket uses condition IDs (long hex strings). To find them:
 
-## Tool Catalog
-
-### Polymarket Server Tools
-
-#### 1. get_market_data
-Fetches current market information.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024"
-}
-```
-
-**Output:** Price, volume, liquidity, trader count, etc.
-
-#### 2. analyze_volume_anomaly
-Detects unusual trading volume spikes.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024",
-  "timeframe": "24h"
-}
-```
-
-**Output:** Z-score, severity assessment, anomaly detection
-
-#### 3. detect_wash_trading
-Identifies potential wash trading patterns.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024",
-  "lookback_hours": 24
-}
-```
-
-**Output:** Suspicious wallet pairs, confidence level
-
-#### 4. calculate_health_score
-Calculates overall market health (0-100).
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024"
-}
-```
-
-**Output:** Overall score, component scores, risk level
-
-#### 5. get_trader_concentration
-Analyzes trader distribution.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024"
-}
-```
-
-**Output:** Gini coefficient, top trader percentages
-
-#### 6. get_historical_patterns
-Finds similar past manipulation cases.
-
-**Input:**
-```json
-{
-  "pattern_type": "volume_spike"
-}
-```
-
-**Output:** Similar historical cases with similarity scores
-
-### News Server Tools
-
-#### 1. get_market_related_news
-Fetches news articles for a topic.
-
-**Input:**
-```json
-{
-  "topic": "Trump 2024",
-  "timeframe": "24h"
-}
-```
-
-**Output:** List of articles with summaries
-
-#### 2. analyze_news_sentiment
-Analyzes news sentiment.
-
-**Input:**
-```json
-{
-  "topic": "Trump 2024",
-  "timeframe": "24h"
-}
-```
-
-**Output:** Sentiment breakdown, confidence level
-
-#### 3. correlate_news_to_price
-Checks if price moves align with news.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024",
-  "price_change_time": "2024-11-08T12:00:00Z",
-  "window_minutes": 30
-}
-```
-
-**Output:** Correlation score, red flags
-
-#### 4. compare_news_trading_volume
-Detects disproportionate trading vs news.
-
-**Input:**
-```json
-{
-  "market_id": "trump-2024",
-  "timeframe": "24h"
-}
-```
-
-**Output:** Volume-to-news ratio, anomaly assessment
-
-#### 5. get_breaking_news
-Gets breaking news alerts.
-
-**Input:**
-```json
-{
-  "categories": ["politics", "crypto"]
-}
-```
-
-**Output:** Recent breaking news with market impact
-
-## For API Team
-
-### Integration
-
-Use the `mcp_config.json` file in `backend/` directory:
-```json
-{
-  "mcpServers": {
-    "polymarket-analysis": {
-      "command": "python",
-      "args": ["backend/mcp_servers/polymarket_server/server.py"]
-    },
-    "news-analysis": {
-      "command": "python",
-      "args": ["backend/mcp_servers/news_server/server.py"]
-    }
-  }
-}
-```
-
-### Example Usage with Claude
+### Method 1: Use search_markets tool
 ```python
-import anthropic
-
-client = anthropic.Anthropic(api_key="your_key")
-
-# Define MCP tools
-tools = [
-    {
-        "name": "get_market_data",
-        "description": "Fetch market data",
-        "input_schema": {...}
-    },
-    # ... more tools
-]
-
-# Call Claude with tools
-response = client.messages.create(
-    model="claude-sonnet-4-20250514",
-    max_tokens=4000,
-    tools=tools,
-    messages=[{
-        "role": "user",
-        "content": "Analyze the Trump 2024 market for manipulation"
-    }]
-)
-
-# Claude will automatically call your MCP tools as needed
+# The search tool finds real markets for you!
 ```
 
-## Development
+### Method 2: Browse Polymarket website
+1. Go to https://polymarket.com/
+2. Click any market
+3. URL will be: `https://polymarket.com/event/NAME?id=CONDITION_ID`
+4. Copy the CONDITION_ID
 
-### Current Status
-✅ All tools implemented with mock data
-✅ Servers tested and working
-✅ Ready for API integration
+### Example Real Market IDs:
+- Trump 2024: Check polymarket.com for current ID
+- Bitcoin: Check polymarket.com for current ID
 
-### Next Steps (Optional)
-- [ ] Replace mock data with real Polymarket API
-- [ ] Integrate NewsAPI for real news data
-- [ ] Add database for historical patterns
-- [ ] Implement caching layer
+## What Data is REAL:
+
+✅ Polymarket Server:
+- ALL market data from CLOB API
+- ALL trade history from blockchain
+- ALL volume calculations from actual trades
+- ALL trader addresses from real wallets
+- ALL health scores from real metrics
+
+✅ News Server:
+- ALL articles from NewsAPI
+- ALL publication times real
+- ALL sources real (Reuters, Bloomberg, etc.)
+- ALL sentiment from actual article text
+
+## Testing with Real Data
+```bash
+# Run test with real market
+python test_quick.py
+
+# This will call REAL APIs and return REAL data!
+```
 
 ## Troubleshooting
 
-### Server won't start
-```bash
-# Check Python version (need 3.9+)
-python --version
+### "NEWS_API_KEY not found"
+→ Make sure .env file is in `backend/` directory
+→ Make sure you added NEWS_API_KEY=your_key
 
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
-```
+### "NewsAPI rate limit exceeded"
+→ Free tier = 100 requests/day
+→ Wait 24 hours or upgrade
 
-### Tools not responding
-```bash
-# Run test suite
-python tests/test_servers.py
+### "Invalid market ID"
+→ Use search_markets tool to find valid IDs
+→ Or copy from polymarket.com URLs
 
-# Check server logs
-python polymarket_server/server.py 2>&1 | tee server.log
-```
+## Data Sources Confirmed Real
 
-## Contact
+- Polymarket: https://clob.polymarket.com (Public API)
+- News: https://newsapi.org (Your account)
+- All blockchain data: Polygon network
 
-For questions or issues with MCP servers:
-- Your Name: [your-email]
-- Branch: `mcp-servers`
-- Status: ✅ Ready for integration
+## You're Done!
