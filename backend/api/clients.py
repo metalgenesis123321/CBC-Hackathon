@@ -4,6 +4,9 @@ from typing import List, Dict, Any, Optional
 import httpx
 from cachetools import TTLCache, cached
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ENV
 POLY_API_URL = os.getenv("POLY_API_URL")
@@ -53,13 +56,6 @@ async def fetch_market_detail(market_id: str) -> Dict[str,Any]:
         raise ValueError("POLY_API_URL not configured")
     headers = {"Authorization": f"Bearer {POLY_API_KEY}"} if POLY_API_KEY else {}
     return await _get(f"{POLY_API_URL}/markets/{market_id}", headers=headers)
-
-async def fetch_trades(market_id: str, limit: int = 100):
-    if not POLY_API_URL:
-        raise ValueError("POLY_API_URL not configured")
-    headers = {"Authorization": f"Bearer {POLY_API_KEY}"} if POLY_API_KEY else {}
-    data = await _get(f"{POLY_API_URL}/markets/{market_id}/trades", headers=headers, params={"limit": limit})
-    return data.get("trades", data)
 
 async def fetch_latest(limit: int = 10):
     if not POLY_API_URL:
