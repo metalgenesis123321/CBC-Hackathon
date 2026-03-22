@@ -407,13 +407,165 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── 3D TAB ── */}
+        {/* ── 3D MOCK INTERVIEW TAB ── */}
         {tab === "3d-interview" && (
           <div className="fade-in" style={{ margin: "-28px -28px 0", height: "calc(100vh - 56px)" }}>
-            <InterviewArtifactScene questions={sessionQuestions.length > 0 ? sessionQuestions.map(q=>q.text) : undefined} companyName={profile.targetCompany} profile={profile} userId={user?.id} sessionId={sessionId} role={profile.targetRole}
-              onInterviewStart={() => { const sid = sessionIdRef.current||`3d_${Date.now()}`; sessionIdRef.current=sid; setSessionId(sid); if(user?.id) cloudSaveSession(user.id,{id:sid,company:profile.targetCompany,role:profile.targetRole,answerCount:0,avgScore:0,weakAreas:[],sessionNumber:1,generatedQuestions:sessionQuestions.length>0?sessionQuestions:[],interviewType:"3d-mock",roundType:"behavioral",sessionConfig:{mode:"3d-mock",company:profile.targetCompany}}); }}
-              onAnswerRecorded={(qIdx,answerText,audioUrl)=>{ setAnswer(answerText); if(audioUrl) setAudioUrl(audioUrl); setCurrentQIndex(qIdx); const sid=sessionIdRef.current; if(user?.id&&sid){const q=sessionQuestions[qIdx]; cloudSaveAnswer(user.id,{id:`3d-${sid}-${qIdx}-${Date.now()}`,sessionId:sid,questionId:q?.id||`q-${qIdx}`,questionText:q?.text||answerText.substring(0,50),category:q?.category||"general",type:q?.type||"behavioral",answer:answerText,feedback:{},durationSec:0,transcript:answerText});} }}
-              onSessionComplete={(answers,sessionAnalysis)=>{ const sid=sessionIdRef.current; if(user?.id&&sid){const avg=sessionAnalysis?.session_score||0; const wa=sessionAnalysis?.top_3_focus_areas||sessionAnalysis?.adaptive_question_topics||[]; cloudSaveSession(user.id,{id:sid,company:profile.targetCompany,role:profile.targetRole,answerCount:answers.length,avgScore:avg,weakAreas:wa,sessionNumber:1,sessionSummary:sessionAnalysis,generatedQuestions:sessionQuestions,interviewType:"3d-mock",roundType:"behavioral",sessionConfig:{mode:"3d-mock",company:profile.targetCompany}}); answers.forEach(a=>{if(a.analysis?.weak_areas?.length){fetch("/api/db",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"updateWeakAreas",userId:user.id,areas:a.analysis.weak_areas,score:a.analysis.overall_score||50})}).catch(()=>{})}}) } }}
+            <InterviewArtifactScene
+              questions={sessionQuestions.length > 0 ? sessionQuestions.map(q => q.text) : undefined}
+              companyName={profile.targetCompany}
+              profile={profile}
+              userId={user?.id}
+              sessionId={sessionId}
+              role={profile.targetRole}
+              onInterviewStart={() => {
+                const sid = sessionIdRef.current || `3d_sess_${Date.now()}`;
+                sessionIdRef.current = sid;
+                setSessionId(sid);
+
+                // Save session to localStorage immediately (appears in History even if partial)
+                const session: SessionRecord = {
+                  id: sid,
+                  company: profile.targetCompany,
+                  role: profile.targetRole,
+                  startedAt: new Date().toISOString(),
+                  answerCount: 0,
+                  avgScore: 0,
+                  weakAreas: [],
+                  sessionNumber: getSessionCount() + 1,
+                };
+                recordSession(session);
+
+                // Also save to cloud DB
+                if (user?.id) {
+                  cloudSaveSession(user.id, {
+                    ...session,
+                    generatedQuestions: sessionQuestions.length > 0 ? sessionQuestions : [],
+                    interviewType: "3d-mock",
+                    roundType: "behavioral",
+                    sessionConfig: { mode: "3d-mock", company: profile.targetCompany },
+                  });
+                }
+              }}
+              onAnswerRecorded={(qIdx, answerText, audioUrl, durationSec) => {
+                setAnswer(answerText);
+                if (audioUrl) setAudioUrl(audioUrl);
+                setCurrentQIndex(qIdx);
+                const sid = sessionIdRef.current;
+                if (user?.id && sid) {
+                  const q = sessionQuestions[qIdx];
+                  const answerId = `3d-${sid}-${qIdx}-${Date.now()}`;
+                  cloudSaveAnswer(user.id, {
+                    id: answerId,
+                    sessionId: sid,
+                    questionId: q?.id || `q-${qIdx}`,
+                    questionText: q?.text || answerText.substring(0, 50),
+                    category: q?.category || "general",
+                    type: q?.type || "behavioral",
+                    answer: answerText,
+                    feedback: {},
+                    durationSec: durationSec || 0,
+                    transcript: answerText,
+                  });
+                }
+              }}
+              onFeedbackReceived={(qIdx, question, answerText, analysis, humanizedFeedback, durationSec) => {
+                const sid = sessionIdRef.current;
+                const q = sessionQuestions[qIdx];
+                const answerId = `3d-${sid}-${qIdx}`;
+
+                // Build feedback for localStorage
+                const fb: FeedbackResult = {
+                  overall_score: analysis.overall_score || 0,
+                  star_scores: analysis.star_scores || { situation: 0, task: 0, action: 0, result: 0 },
+                  dimension_scores: analysis.dimension_scores || {},
+                  sentence_analysis: analysis.sentence_analysis || [],
+                  delivery_analysis: analysis.delivery_analysis || {},
+                  strengths: analysis.strengths || [],
+                  improvements: analysis.improvements || [],
+                  coaching_tip: analysis.coaching_tip || "",
+                  follow_up_question: analysis.follow_up_question || (analysis.follow_up_questions || [])[0] || "",
+                  weak_areas: analysis.weak_areas || [],
+                  ideal_90sec_structure: analysis.ideal_answer_outline || analysis.ideal_90sec_structure || "",
+                  weakest_sentence_rewrite: analysis.weakest_sentence_rewrite || "",
+                  recommendation: analysis.hiring_recommendation || "",
+                  encouragement: analysis.encouragement || "",
+                };
+
+                // Save to localStorage so it appears in History tab
+                const answerRecord: AnswerRecord = {
+                  id: answerId,
+                  sessionId: sid,
+                  questionId: q?.id || `q-${qIdx}`,
+                  questionText: question,
+                  category: q?.category || "general",
+                  type: q?.type || "behavioral",
+                  answer: answerText,
+                  feedback: fb,
+                  durationSec: durationSec || 0,
+                  timestamp: new Date().toISOString(),
+                };
+                recordAnswer(answerRecord);
+
+                // Save to cloud DB
+                if (user?.id && sid) {
+                  cloudSaveAnswer(user.id, {
+                    ...answerRecord,
+                    feedback: { ...analysis, humanized_feedback: humanizedFeedback },
+                    transcript: answerText,
+                  });
+                  if (analysis.weak_areas?.length) {
+                    fetch("/api/db", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "updateWeakAreas",
+                        userId: user.id,
+                        areas: analysis.weak_areas,
+                        score: analysis.overall_score || 50,
+                      }),
+                    }).catch(() => {});
+                  }
+                }
+              }}
+              onSessionComplete={(answers, sessionAnalysis) => {
+                const sid = sessionIdRef.current;
+                const avgScore = sessionAnalysis?.session_score || 0;
+                const weakAreas = sessionAnalysis?.top_3_focus_areas || sessionAnalysis?.adaptive_question_topics || [];
+
+                // Save session to localStorage so it appears in History tab
+                const session: SessionRecord = {
+                  id: sid,
+                  company: profile.targetCompany,
+                  role: profile.targetRole,
+                  startedAt: new Date().toISOString(),
+                  answerCount: answers.length,
+                  avgScore,
+                  weakAreas,
+                  sessionNumber: getSessionCount() + 1,
+                };
+                recordSession(session);
+
+                // Save to cloud DB
+                if (user?.id && sid) {
+                  cloudSaveSession(user.id, {
+                    ...session,
+                    sessionSummary: sessionAnalysis,
+                    generatedQuestions: sessionQuestions,
+                    interviewType: "3d-mock",
+                    roundType: "behavioral",
+                    sessionConfig: { mode: "3d-mock", company: profile.targetCompany },
+                  });
+                  answers.forEach(a => {
+                    if (a.analysis?.weak_areas?.length) {
+                      fetch("/api/db", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "updateWeakAreas", userId: user.id, areas: a.analysis.weak_areas, score: a.analysis.overall_score || 50 }),
+                      }).catch(() => {});
+                    }
+                  });
+                }
+              }}
             />
           </div>
         )}
@@ -570,22 +722,48 @@ function HistoryView() {
     </div>
   );
 
-  // Group by session — safely handle missing sessionId
+  // Group by session
   const sessionMap = new Map<string,AnswerRecord[]>();
   for (const a of profile.answers) { const sid = a.sessionId || "unknown"; if (!sessionMap.has(sid)) sessionMap.set(sid,[]); sessionMap.get(sid)!.push(a); }
 
+  // Group sessions by company
+  const companyGroups = new Map<string, Array<{ sessId: string; session: SessionRecord | undefined; answers: AnswerRecord[]; avg: number }>>();
+  for (const [sessId, answers] of sessionMap.entries()) {
+    const session = (profile.sessions || []).find(s => s.id === sessId);
+    const company = session?.company || "Practice";
+    const scored = answers.filter(a => a.feedback?.overall_score > 0);
+    const avg = scored.length > 0 ? Math.round(scored.reduce((s, a) => s + (a.feedback?.overall_score || 0), 0) / scored.length) : 0;
+    if (!companyGroups.has(company)) companyGroups.set(company, []);
+    companyGroups.get(company)!.push({ sessId, session, answers, avg });
+  }
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="fade-in">
-      <h2 style={{ fontSize:24, fontWeight:700, color:"var(--heading)", letterSpacing:"-0.02em", margin:"0 0 8px" }}>Practice History</h2>
-      {Array.from(sessionMap.entries()).map(([sessId,answers]) => {
-        const session = (profile.sessions || []).find(s=>s.id===sessId);
-        const scored = answers.filter(a=>a.feedback?.overall_score > 0);
-        const avg = scored.length>0 ? Math.round(scored.reduce((s,a)=>s+(a.feedback?.overall_score||0),0)/scored.length) : 0;
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }} className="fade-in">
+      <h2 style={{ fontSize:24, fontWeight:700, color:"var(--heading)", letterSpacing:"-0.02em", margin:"0 0 4px" }}>Interview History</h2>
+      {Array.from(companyGroups.entries()).map(([company, sessions]) => {
+        const totalSessions = sessions.length;
+        const allScored = sessions.flatMap(s => s.answers.filter(a => a.feedback?.overall_score > 0));
+        const companyAvg = allScored.length > 0 ? Math.round(allScored.reduce((s, a) => s + (a.feedback?.overall_score || 0), 0) / allScored.length) : 0;
         return (
+          <div key={company} style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {/* Company header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 4px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:10, background:"linear-gradient(135deg, rgba(34,211,238,0.15), rgba(129,140,248,0.15))", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🏢</div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:700, color:"var(--heading)" }}>{company}</div>
+                  <div style={{ fontSize:12, color:T.tert }}>{totalSessions} session{totalSessions !== 1 ? "s" : ""} · {allScored.length} answered</div>
+                </div>
+              </div>
+              {companyAvg > 0 && <span style={{ fontSize:14, fontWeight:800, color:sc(companyAvg), background:`${sc(companyAvg)}18`, padding:"5px 16px", borderRadius:999 }}>{companyAvg} avg</span>}
+            </div>
+
+            {/* Sessions for this company */}
+            {sessions.map(({ sessId, session, answers, avg }) => (
           <details key={sessId} style={{ ...b, overflow:"hidden" }}>
             <summary style={{ padding:"18px 22px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
-                <span style={{ fontSize:15, fontWeight:600, color:"white" }}>{session?.company||"Practice"}{session?.role ? ` — ${session.role}` : ""}</span>
+                <span style={{ fontSize:15, fontWeight:600, color:"white" }}>{session?.role || "General Prep"}</span>
                 <span style={{ fontSize:13, color:T.sec, marginLeft:10 }}>{answers[0]?.timestamp ? new Date(answers[0].timestamp).toLocaleDateString() : "—"} · {answers.length} Qs</span>
               </div>
               {avg>0 && <span style={{ fontSize:14, fontWeight:800, color:sc(avg), background:`${sc(avg)}18`, padding:"4px 14px", borderRadius:999 }}>{avg} avg</span>}
@@ -767,6 +945,8 @@ function HistoryView() {
               })}
             </div>
           </details>
+            ))}
+          </div>
         );
       })}
     </div>

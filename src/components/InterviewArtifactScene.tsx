@@ -1154,12 +1154,12 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
 
   const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-  const sc = (s: number) => s >= 80 ? "#4ade80" : s >= 60 ? "#facc15" : "#f87171";
+  const sc = (s: number) => s >= 80 ? "#34d399" : s >= 60 ? "#fbbf24" : "#f87171";
 
   // ── Render ────────────────────────────────────────────────────
 
   return (
-    <div style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif", width: "100%", height: "100vh", background: "#060c16", display: "flex", flexDirection: "row", position: "relative", userSelect: "none" }}>
+    <div style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif", width: "100%", height: "100%", background: "#060c16", display: "flex", flexDirection: "row", position: "relative", userSelect: "none", overflow: "hidden" }}>
       {/* Left: 3D canvas (shrinks when feedback is open) */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", transition: "all 0.4s ease" }}>
       {/* Three.js canvas */}
@@ -1198,10 +1198,10 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                 <div key={i} style={{
                   width: i === currentQIdx ? 20 : isFollowUp ? 8 : 6,
                   height: 6, borderRadius: 99,
-                  background: i < currentQIdx ? "#4ade80"
+                  background: i < currentQIdx ? "#34d399"
                     : i === currentQIdx ? "rgba(255,255,255,0.9)"
                     : "rgba(255,255,255,0.18)",
-                  border: isFollowUp ? "1px solid rgba(250,204,21,0.4)" : "none",
+                  border: isFollowUp ? "1px solid rgba(251,191,36,0.4)" : "none",
                   transition: "all 0.3s ease",
                 }} />
               );
@@ -1214,9 +1214,9 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
       <div style={{
         position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
         background: "rgba(6,12,22,0.85)", borderRadius: 999, padding: "6px 20px",
-        color: mode === "feedback" ? "#facc15" : activeSpeaker === "interviewer" ? "#60a5fa" : "#c084fc",
+        color: mode === "feedback" ? "#fbbf24" : activeSpeaker === "interviewer" ? "#22d3ee" : "#818cf8",
         fontSize: 13, fontWeight: 700, letterSpacing: 0.5,
-        border: `1px solid ${mode === "feedback" ? "rgba(250,204,21,0.3)" : activeSpeaker === "interviewer" ? "rgba(96,165,250,0.3)" : "rgba(192,132,252,0.3)"}`,
+        border: `1px solid ${mode === "feedback" ? "rgba(251,191,36,0.3)" : activeSpeaker === "interviewer" ? "rgba(34,211,238,0.3)" : "rgba(129,140,248,0.3)"}`,
         backdropFilter: "blur(8px)", zIndex: 20,
         marginTop: 26,
       }}>
@@ -1241,8 +1241,8 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                 title="Get interviewer feedback"
                 style={{
                   padding: "6px 12px", borderRadius: 8, cursor: "pointer",
-                  background: "rgba(250,204,21,0.2)", color: "#facc15",
-                  fontSize: 12, fontWeight: 700, border: "1px solid rgba(250,204,21,0.4)",
+                  background: "rgba(34,211,238,0.2)", color: "#22d3ee",
+                  fontSize: 12, fontWeight: 700, border: "1px solid rgba(34,211,238,0.4)",
                   display: "flex", alignItems: "center", gap: 4,
                 }}
               >
@@ -1262,10 +1262,10 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                       background: "transparent", color: "#e2e8f0", fontSize: 13, textAlign: "left",
                       borderBottom: "1px solid rgba(255,255,255,0.08)",
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(250,204,21,0.1)")}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(34,211,238,0.1)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <div style={{ fontWeight: 700, color: "#facc15" }}>This Question</div>
+                    <div style={{ fontWeight: 700, color: "#22d3ee" }}>This Question</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Analyze your last answer</div>
                   </button>
                   <button
@@ -1274,10 +1274,10 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                       width: "100%", padding: "12px 14px", border: "none", cursor: "pointer",
                       background: "transparent", color: "#e2e8f0", fontSize: 13, textAlign: "left",
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(250,204,21,0.1)")}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(34,211,238,0.1)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <div style={{ fontWeight: 700, color: "#facc15" }}>All Questions</div>
+                    <div style={{ fontWeight: 700, color: "#22d3ee" }}>All Questions</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>Full session analysis ({allAnswers.length} answers)</div>
                   </button>
                 </div>
@@ -1289,7 +1289,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
             background: "rgba(6,12,22,0.85)", borderRadius: 999, padding: "6px 16px",
             color: followUpFlags[currentQIdx] ? "#facc15" : "#94a3b8",
             fontSize: 12, fontWeight: 600,
-            border: `1px solid ${followUpFlags[currentQIdx] ? "rgba(250,204,21,0.3)" : "rgba(255,255,255,0.1)"}`,
+            border: `1px solid ${followUpFlags[currentQIdx] ? "rgba(251,191,36,0.3)" : "rgba(255,255,255,0.1)"}`,
           }}>
             {followUpFlags[currentQIdx] ? "Follow-up" : `Q${currentQIdx + 1}`} / 5
           </div>
@@ -1310,7 +1310,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
             <div style={{ color: "#e2e8f0", fontSize: 15, lineHeight: 1.7 }}>
               {generatingFollowUp ? (
                 <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <div style={{ color: "#facc15", fontSize: 14, fontWeight: 700, marginBottom: 8, animation: "pulse 1.5s infinite" }}>
+                  <div style={{ color: "#fbbf24", fontSize: 14, fontWeight: 700, marginBottom: 8, animation: "pulse 1.5s infinite" }}>
                     Crafting a follow-up based on your answer...
                   </div>
                   <div style={{ color: "#64748b", fontSize: 12 }}>
@@ -1319,7 +1319,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                 </div>
               ) : (
                 <>
-                  <span style={{ color: followUpFlags[currentQIdx] ? "#facc15" : "#60a5fa", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, display: "block", marginBottom: 8 }}>
+                  <span style={{ color: followUpFlags[currentQIdx] ? "#fbbf24" : "#22d3ee", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5, display: "block", marginBottom: 8 }}>
                     {followUpFlags[currentQIdx] ? "Follow-up Question" : `Question ${currentQIdx + 1}`}
                   </span>
                   <div style={{ fontSize: 16, lineHeight: 1.7, letterSpacing: 0.2 }}>
@@ -1327,7 +1327,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                       <span key={i} style={{
                         color: spokenWordIdx >= i ? "#ffffff" : "rgba(148,163,184,0.5)",
                         fontWeight: spokenWordIdx === i ? 800 : spokenWordIdx >= i ? 600 : 400,
-                        background: spokenWordIdx === i ? "rgba(96,165,250,0.25)" : "transparent",
+                        background: spokenWordIdx === i ? "rgba(34,211,238,0.25)" : "transparent",
                         borderRadius: spokenWordIdx === i ? 4 : 0,
                         padding: spokenWordIdx === i ? "1px 4px" : "0 1px",
                         transition: "all 0.15s ease",
@@ -1342,8 +1342,8 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
           )}
           {mode === "recording" && (
             <div>
-              <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 8, padding: "6px 10px", background: "rgba(96,165,250,0.08)", borderRadius: 8, borderLeft: "3px solid #60a5fa" }}>
-                <span style={{ color: "#60a5fa", fontWeight: 700 }}>Q:</span> {allQuestions[currentQIdx]}
+              <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 8, padding: "6px 10px", background: "rgba(34,211,238,0.08)", borderRadius: 8, borderLeft: "3px solid #22d3ee" }}>
+                <span style={{ color: "#22d3ee", fontWeight: 700 }}>Q:</span> {allQuestions[currentQIdx]}
               </div>
               <div style={{ color: "#e2e8f0", fontSize: 14, lineHeight: 1.6 }}>
                 {transcript || <span style={{ color: "#475569", fontStyle: "italic" }}>Listening... speak your answer</span>}
@@ -1352,8 +1352,8 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
           )}
           {mode === "reviewing" && (
             <div>
-              <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4, padding: "5px 10px", background: "rgba(96,165,250,0.06)", borderRadius: 6, borderLeft: "3px solid #60a5fa" }}>
-                <span style={{ color: "#60a5fa", fontWeight: 700 }}>Q:</span> {allQuestions[currentQIdx]}
+              <div style={{ color: "#94a3b8", fontSize: 11, marginBottom: 4, padding: "5px 10px", background: "rgba(34,211,238,0.06)", borderRadius: 6, borderLeft: "3px solid #22d3ee" }}>
+                <span style={{ color: "#22d3ee", fontWeight: 700 }}>Q:</span> {allQuestions[currentQIdx]}
               </div>
               <div style={{ marginTop: 10, marginBottom: 8 }}>
                 <span style={{ color: "#c084fc", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5 }}>Your Answer:</span>
@@ -1378,10 +1378,10 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
         {/* Intro — Start button */}
         {mode === "intro" && (
           <button onClick={startInterview} style={{
-            width: "100%", padding: "14px 0", borderRadius: 12, border: "1px solid rgba(96,165,250,0.45)", cursor: "pointer",
-            background: "linear-gradient(135deg,#1e3a5f,#163050)", color: "white",
-            fontSize: 16, fontWeight: 700, boxShadow: "0 0 30px rgba(96,165,250,0.18)",
-            letterSpacing: 0.5,
+            width: "100%", padding: "14px 0", borderRadius: 14, border: "none", cursor: "pointer",
+            background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white",
+            fontSize: 16, fontWeight: 700, boxShadow: "0 0 30px rgba(34,211,238,0.25)",
+            letterSpacing: 0.5, fontFamily: "inherit",
           }}>
             Start Interview (5 Questions)
           </button>
@@ -1389,7 +1389,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
 
         {/* Asking / Generating follow-up */}
         {mode === "asking" && (
-          <div style={{ width: "100%", textAlign: "center", color: generatingFollowUp ? "#facc15" : "#60a5fa", fontSize: 14, fontWeight: 600 }}>
+          <div style={{ width: "100%", textAlign: "center", color: generatingFollowUp ? "#fbbf24" : "#22d3ee", fontSize: 14, fontWeight: 600 }}>
             <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}>
               {generatingFollowUp ? "Generating follow-up question based on your answer..." : "Interviewer is speaking..."}
             </span>
@@ -1399,9 +1399,9 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
         {/* Recording controls */}
         {mode === "recording" && !isRecording && (
           <button onClick={startRecording} style={{
-            width: "100%", padding: "14px 0", borderRadius: 12, border: "1px solid rgba(74,222,128,0.45)", cursor: "pointer",
-            background: "linear-gradient(135deg, #1a3a2a, #163028)", color: "white",
-            fontSize: 16, fontWeight: 700, boxShadow: "0 0 30px rgba(74,222,128,0.18)",
+            width: "100%", padding: "14px 0", borderRadius: 14, border: "none", cursor: "pointer",
+            background: "linear-gradient(135deg, #34d399, #22d3ee)", color: "white",
+            fontSize: 16, fontWeight: 700, boxShadow: "0 0 30px rgba(52,211,153,0.25)", fontFamily: "inherit",
           }}>
             Start Recording Your Answer
           </button>
@@ -1438,16 +1438,16 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
         {mode === "reviewing" && (
           <div style={{ width: "100%", display: "flex", gap: 10 }}>
             <button onClick={nextQuestion} style={{
-              flex: 1, padding: "14px 0", borderRadius: 12, cursor: "pointer",
-              border: `1px solid ${!followUpFlags[currentQIdx] && origQUsedRef.current < originalQsRef.current.length - 1 ? "rgba(250,204,21,0.45)" : "rgba(96,165,250,0.45)"}`,
+              flex: 1, padding: "14px 0", borderRadius: 14, cursor: "pointer",
+              border: "none",
               background: !followUpFlags[currentQIdx] && origQUsedRef.current < originalQsRef.current.length - 1
-                ? "linear-gradient(135deg,#3a2a0a,#2a1f08)"
-                : "linear-gradient(135deg,#1e3a5f,#163050)",
+                ? "linear-gradient(135deg, #fbbf24, #f97316)"
+                : "linear-gradient(135deg, #22d3ee, #818cf8)",
               color: "white",
               fontSize: 16, fontWeight: 700,
               boxShadow: !followUpFlags[currentQIdx] && origQUsedRef.current < originalQsRef.current.length - 1
-                ? "0 0 30px rgba(250,204,21,0.15)"
-                : "0 0 30px rgba(96,165,250,0.18)",
+                ? "0 0 30px rgba(251,191,36,0.25)"
+                : "0 0 30px rgba(34,211,238,0.25)",
             }}>
               {(() => {
                 const isCurrentFollowUp = followUpFlags[currentQIdx];
@@ -1465,7 +1465,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
 
         {/* Feedback mode — controls are in the sidebar */}
         {mode === "feedback" && (
-          <div style={{ width: "100%", textAlign: "center", color: feedbackSpeaking ? "#facc15" : "#64748b", fontSize: 13, fontWeight: 600 }}>
+          <div style={{ width: "100%", textAlign: "center", color: feedbackSpeaking ? "#22d3ee" : "#64748b", fontSize: 13, fontWeight: 600 }}>
             {feedbackSpeaking ? "Interviewer is giving feedback..." : feedbackLoading ? "Analyzing your answer..." : "See feedback in the panel →"}
           </div>
         )}
@@ -1480,13 +1480,13 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
           background: "rgba(8,14,28,0.98)", borderLeft: "1px solid rgba(255,255,255,0.08)",
           padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14,
         }}>
-          <div style={{ color: "#facc15", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>
+          <div style={{ color: "#22d3ee", fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>
             {feedbackMode === "single" ? "Question Feedback" : "Session Analysis"}
           </div>
 
           {feedbackLoading ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ color: "#facc15", fontSize: 14, fontWeight: 700, marginBottom: 8, animation: "pulse 1.5s infinite" }}>
+              <div style={{ color: "#22d3ee", fontSize: 14, fontWeight: 700, marginBottom: 8, animation: "pulse 1.5s infinite" }}>
                 {feedbackMode === "single" ? "Analyzing your answer..." : "Analyzing full session..."}
               </div>
               <div style={{ color: "#64748b", fontSize: 12 }}>Gemini is analyzing, then Claude will humanize the feedback</div>
@@ -1494,8 +1494,8 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
           ) : feedbackData ? (
             <>
               {/* Humanized spoken feedback */}
-              <div style={{ padding: "12px 14px", background: "rgba(250,204,21,0.06)", borderRadius: 10, borderLeft: "3px solid #facc15" }}>
-                <div style={{ color: "#facc15", fontSize: 10, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>
+              <div style={{ padding: "12px 14px", background: "rgba(34,211,238,0.06)", borderRadius: 10, borderLeft: "3px solid #22d3ee" }}>
+                <div style={{ color: "#22d3ee", fontSize: 10, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>
                   Interviewer says{feedbackSpeaking ? " (speaking...)" : ""}:
                 </div>
                 <div style={{ color: "#e2e8f0", fontSize: 13, lineHeight: 1.6, fontStyle: "italic" }}>
@@ -1506,7 +1506,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
               {/* Score + badges */}
               {feedbackData.analysis && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <div style={{ background: "rgba(96,165,250,0.08)", borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ background: "rgba(34,211,238,0.08)", borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ position: "relative", width: 52, height: 52 }}>
                       <ScoreRing score={(feedbackData.analysis as any).overall_score || (feedbackData.analysis as any).session_score || 0} size={52} stroke={4} />
                       <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1518,17 +1518,17 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                     <div style={{ color: "#94a3b8", fontSize: 11, fontWeight: 600 }}>Overall<br />Score</div>
                   </div>
                   {(feedbackData.analysis as any).readiness_label && (
-                    <div style={{ background: "rgba(74,222,128,0.08)", borderRadius: 10, padding: "10px 14px", flex: 1 }}>
+                    <div style={{ background: "rgba(52,211,153,0.08)", borderRadius: 10, padding: "10px 14px", flex: 1 }}>
                       <div style={{ color: "#94a3b8", fontSize: 10, fontWeight: 600 }}>Readiness</div>
-                      <div style={{ color: "#4ade80", fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                      <div style={{ color: "#34d399", fontSize: 15, fontWeight: 700, marginTop: 2 }}>
                         {(feedbackData.analysis as any).readiness_label}
                       </div>
                     </div>
                   )}
                   {(feedbackData.analysis as any).hiring_recommendation && (
-                    <div style={{ background: "rgba(250,204,21,0.08)", borderRadius: 10, padding: "10px 14px", flex: 1 }}>
+                    <div style={{ background: "rgba(129,140,248,0.08)", borderRadius: 10, padding: "10px 14px", flex: 1 }}>
                       <div style={{ color: "#94a3b8", fontSize: 10, fontWeight: 600 }}>Recommendation</div>
-                      <div style={{ color: "#facc15", fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                      <div style={{ color: "#818cf8", fontSize: 15, fontWeight: 700, marginTop: 2 }}>
                         {(feedbackData.analysis as any).hiring_recommendation}
                       </div>
                     </div>
@@ -1570,7 +1570,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
               {((feedbackData.analysis as any)?.strengths || (feedbackData.analysis as any)?.strengths_to_leverage) && (
                 <div style={{ display: "flex", gap: 10 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: "#4ade80", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>STRENGTHS</div>
+                    <div style={{ color: "#34d399", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>STRENGTHS</div>
                     {((feedbackData.analysis as any).strengths || (feedbackData.analysis as any).strengths_to_leverage || []).slice(0, 3).map((s: string, i: number) => (
                       <div key={i} style={{ color: "#94a3b8", fontSize: 11, marginBottom: 3 }}>+ {s}</div>
                     ))}
@@ -1597,10 +1597,10 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                         <span style={{ color: "#e2e8f0", fontSize: 12 }}>{qa.q}</span>
                       </div>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <span style={{ color: "#60a5fa", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>IV:</span>
+                        <span style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>IV:</span>
                         <div>
                           <span style={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.5 }}>{qa.a}</span>
-                          {qa.tip && <div style={{ color: "#facc15", fontSize: 11, marginTop: 4, fontStyle: "italic" }}>Tip: {qa.tip}</div>}
+                          {qa.tip && <div style={{ color: "#fbbf24", fontSize: 11, marginTop: 4, fontStyle: "italic" }}>Tip: {qa.tip}</div>}
                         </div>
                       </div>
                     </div>
@@ -1624,7 +1624,7 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                       disabled={askingFeedback || !feedbackQuestion.trim()}
                       style={{
                         padding: "8px 14px", borderRadius: 8, border: "none", cursor: askingFeedback ? "not-allowed" : "pointer",
-                        background: askingFeedback ? "rgba(192,132,252,0.2)" : "linear-gradient(135deg,#7c3aed,#6d28d9)",
+                        background: askingFeedback ? "rgba(129,140,248,0.2)" : "linear-gradient(135deg, #818cf8, #22d3ee)",
                         color: "white", fontSize: 12, fontWeight: 700, fontFamily: "inherit",
                       }}
                     >
@@ -1648,17 +1648,18 @@ export default function InterviewArtifactScene({ questions, onAnswerRecorded, on
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                     {hasMore && (
                       <button onClick={() => { closeFeedback(); nextQuestion(); }} style={{
-                        width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid rgba(96,165,250,0.45)", cursor: "pointer",
-                        background: "linear-gradient(135deg,#1e3a5f,#163050)", color: "white",
-                        fontSize: 14, fontWeight: 700,
+                        width: "100%", padding: "12px 0", borderRadius: 14, border: "none", cursor: "pointer",
+                        background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white",
+                        fontSize: 14, fontWeight: 700, boxShadow: "0 0 30px rgba(34,211,238,0.25)",
                       }}>
                         {!isCurrentFollowUp ? "Next → Follow-up" : "Next Question"}
                       </button>
                     )}
                     <button onClick={() => { closeFeedback(); setMode("intro"); setBubbleText(""); }} style={{
-                      width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid rgba(74,222,128,0.45)", cursor: "pointer",
-                      background: hasMore ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#1a3a2a,#163028)",
+                      width: "100%", padding: "12px 0", borderRadius: 14, border: "none", cursor: "pointer",
+                      background: hasMore ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg, #34d399, #22d3ee)",
                       color: "white", fontSize: hasMore ? 12 : 14, fontWeight: 700,
+                      boxShadow: hasMore ? "none" : "0 0 30px rgba(52,211,153,0.25)",
                     }}>
                       {hasMore ? "End Interview" : "Interview Complete!"}
                     </button>
