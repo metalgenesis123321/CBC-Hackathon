@@ -22,7 +22,7 @@
 **Setup:** Camera on your face. Clean background. Look into the lens.
 
 **Say (naturally, not reading):**
-> "I watched my friend prepare for her Amazon interview with nothing but a Google Doc. She knew the answers — she just froze because she'd never said them out loud. So I built an AI that interviews you."
+> "We watched a friend prepare for her Amazon interview with nothing but a Google Doc. She knew the answers — she just froze because she'd never said them out loud. So we built an AI that interviews you."
 
 **Cut to:** Screen recording of 3D scene (characters sitting at interview table)
 
@@ -40,13 +40,13 @@ This is 80% of your demo. Practice it twice, then record.
 
 **[Click "Start Interview (5 Questions)."]**
 
-> "3D interview office, built with Three.js. Two characters sitting at a table — the interviewer has glasses and a tie, even does hand gestures while talking. Questions are scraped from Reddit and Glassdoor by TinyFish."
+> "We built a 3D interview office with Three.js. Two characters sitting at a table — the interviewer has glasses and a tie, even does hand gestures while talking. Questions are scraped from Reddit and Glassdoor using TinyFish."
 
 **SCREEN:** Interviewer character's mouth animates open/close. Right hand rises in periodic gesture (sinusoidal). Speech bubble appears above interviewer's head showing the question text. Question counter shows "Q1 / 5" in top area.
 
 **[TTS plays the question. LET IT PLAY for 5 seconds — don't talk over the first question, let judges hear the TTS voice and see the character's mouth moving and hands gesturing.]**
 
-> "Now I answer with my voice — Speechmatics transcribes in real-time."
+> "Now you answer with your voice — Speechmatics transcribes in real-time."
 
 ### Shot 2b: Your Answer (0:30–0:45)
 
@@ -75,7 +75,7 @@ Example bad answer:
 
 **SCREEN:** Right sidebar slides in (350px wide, dark glass background). Loading state shows: "Analyzing your answer..." with pulsing yellow text. Below it: "Gemini is analyzing, then Claude will humanize the feedback".
 
-> "Gemini scores the STAR structure. Claude Haiku — the interviewer's brain — turns that into spoken, natural feedback."
+> "Our dual-model system kicks in — Gemini scores the STAR structure, then Claude Haiku — the interviewer's brain — turns that into spoken, natural feedback."
 
 **SCREEN:** Sidebar populates with feedback. Top section: yellow-bordered "INTERVIEWER SAYS (speaking...):" block — words highlight one by one in sync with TTS (current word: bold + yellow background, spoken words: white, unspoken: dim gray). Interviewer character's mouth animates, right hand rises in periodic gestures. Speech bubble above interviewer shows 8-word chunks of the feedback.
 
@@ -84,7 +84,7 @@ Example bad answer:
 **SCREEN:** Below the spoken feedback: purple "Replay Your Answer" button with play icon (shows "45s · 128 words"), then score ring (large circular gauge showing "52" in the center, color-coded). Badges for "Readiness" and "Hiring Recommendation" next to it.
 
 **[Then point at sidebar:]**
-> "52 out of 100. It caught my filler words, flagged that I didn't quantify results, and rated every STAR dimension."
+> "52 out of 100. It caught the filler words, flagged that there were no quantified results, and rated every STAR dimension."
 
 **SCREEN:** Scroll down the sidebar — STAR dimension bars (Situation, Task, Action, Result — each with colored progress bar + score). Then "Strengths" section (green bullets) and "Areas to Improve" (yellow bullets). Then "Coaching Plan" section with "Powered by Claude" badge — specific rewrite examples and improvement steps.
 
@@ -92,7 +92,7 @@ Example bad answer:
 
 ### Shot 2d: Ask About Feedback (1:15–1:30)
 
-> "And I can have a conversation about the feedback — by typing or using my voice."
+> "And you can have a conversation about the feedback — by typing or using your voice."
 
 **SCREEN:** Bottom of sidebar shows "Ask about this feedback" text input with a microphone button (🎤) next to it. Cursor in the text field.
 
@@ -101,7 +101,7 @@ Example bad answer:
 **SCREEN:** Claude's response appears in the Q&A section below — user question in blue, Claude's answer in white with a "Tip:" callout box. Interviewer character speaks the response with mouth animation and gestures. Word highlighting activates again in the sidebar.
 
 **[If coaching plan is visible, point at it:]**
-> "Claude generates a personalized coaching plan with specific examples of how to fix my weakest answer."
+> "Claude generates a personalized coaching plan with specific examples of how to fix the weakest parts of your answer."
 
 ---
 
@@ -111,14 +111,14 @@ Example bad answer:
 
 | Screen Description | Say | Seconds |
 |---|---|---|
-| **AppNav bar** — sticky top bar with tabs: Practice (active, cyan), 3D Mock, Progress, History. Right side: dark/light toggle switch, user avatar circle, "Sign Out" link. Dark theme active. | "Clean navigation — Practice, 3D Mock, Progress, History, dark/light toggle" | 3s |
-| **Onboarding Step 1** — left sidebar shows 3-step progress (Profile, Interview Type, Company & Role). Right panel: "Quick Fill from Resume" card with file upload dropzone + paste area, then "Your Details" card with Name, Country, Background, Experience, Skills fields, Target Roles pills. Click "Auto-Fill from Resume" button. Fields populate. | "Upload your resume, Gemini extracts your profile" | 3s |
-| **Onboarding Step 3** — Company pills row (Google, Amazon, Meta, Microsoft, Apple, Netflix, Startup, Other). Amazon highlighted in cyan. Below: Experience Level grid (0-2, 2-5, 5-10, 10+), Interview Round pills, Job Description textarea. | "Company-specific intelligence — Amazon Leadership Principles, Google Googliness" | 4s |
-| **Practice tab home** — Hero tile shows "Amazon · Software Engineer" (clickable, navigates to profile). Below: two-column grid — left "Amazon Interview Intel" card with interview style description, right "What They Look For" card with tagged pills. Bottom: "Tips from Candidates" full-width card. | "Real interview data scraped from 5 websites by TinyFish" | 3s |
-| **Practice tab mid-session** — Left column: question card with voice recorder waveform, answer text. Right sidebar: FeedbackCard with sentence-by-sentence analysis — each sentence colored green/yellow/red with rating badge, reason, and rewrite suggestion. | "Every answer gets sentence-by-sentence analysis" | 3s |
-| **Progress tab** — Dashboard with score trend line chart, session history cards, weak area breakdown with colored bars (improving/stable/declining labels), communication habits section (filler words count, active voice %, pacing distribution). | "Weak areas tracked across sessions — the AI adapts to target them" | 4s |
+| **AppNav bar** — sticky top bar with tabs: Practice (active, cyan), 3D Mock, Progress, History. Right side: dark/light toggle switch, user avatar circle, "Sign Out" link. Dark theme active. | "Clean navigation our team designed — Practice, 3D Mock, Progress, History, dark/light toggle" | 3s |
+| **Onboarding Step 1** — left sidebar shows 3-step progress (Profile, Interview Type, Company & Role). Right panel: "Quick Fill from Resume" card with file upload dropzone + paste area, then "Your Details" card with Name, Country, Background, Experience, Skills fields, Target Roles pills. Click "Auto-Fill from Resume" button. Fields populate. | "Upload your resume — our system uses Gemini to extract your profile" | 3s |
+| **Onboarding Step 3** — Company pills row (Google, Amazon, Meta, Microsoft, Apple, Netflix, Startup, Other). Amazon highlighted in cyan. Below: Experience Level grid (0-2, 2-5, 5-10, 10+), Interview Round pills, Job Description textarea. | "Company-specific intelligence — we pull Amazon Leadership Principles, Google Googliness, and more" | 4s |
+| **Practice tab home** — Hero tile shows "Amazon · Software Engineer" (clickable, navigates to profile). Below: two-column grid — left "Amazon Interview Intel" card with interview style description, right "What They Look For" card with tagged pills. Bottom: "Tips from Candidates" full-width card. | "Real interview data scraped from 5 websites by TinyFish — our research pipeline" | 3s |
+| **Practice tab mid-session** — Left column: question card with voice recorder waveform, answer text. Right sidebar: FeedbackCard with sentence-by-sentence analysis — each sentence colored green/yellow/red with rating badge, reason, and rewrite suggestion. | "Every answer gets sentence-by-sentence analysis from our AI" | 3s |
+| **Progress tab** — Dashboard with score trend line chart, session history cards, weak area breakdown with colored bars (improving/stable/declining labels), communication habits section (filler words count, active voice %, pacing distribution). | "Weak areas tracked across sessions — our adaptive engine targets them" | 4s |
 
-> Total voiceover: "The system researches your target company, generates personalized questions, tracks your weak areas, and adapts the difficulty. Every interview makes you better."
+> Total voiceover: "Our system researches your target company, generates personalized questions, tracks your weak areas, and adapts the difficulty. Every interview makes you better."
 
 ---
 
@@ -126,7 +126,7 @@ Example bad answer:
 
 **Setup:** Camera on face again. Same angle as Clip 1.
 
-> "Dual-model architecture — Gemini is the analyst, Claude is the interviewer. InsForge routes both models and runs our database. TinyFish scrapes real interview data. Speechmatics handles voice transcription. Every sponsor API is core to the product."
+> "We built a dual-model architecture — Gemini is the analyst, Claude is the interviewer. InsForge routes both models and runs our database. TinyFish scrapes real interview data. Speechmatics handles voice transcription. Every sponsor API is core to what we built."
 
 ---
 
@@ -172,7 +172,7 @@ Example bad answer:
 ## WHAT JUDGES WILL REMEMBER (in order of impact)
 
 1. The 3D scene with characters **sitting and gesturing** — nobody else has this
-2. Your bad answer getting a 52 — they'll laugh, it's relatable
+2. The bad answer getting a 52 — they'll laugh, it's relatable
 3. **Word-by-word highlighting** in sidebar as interviewer speaks — feels like a real coaching session
 4. Interviewer speaking feedback with hand gestures — feels alive
 5. **Replay Your Answer** audio button — lets you hear yourself back

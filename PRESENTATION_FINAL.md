@@ -29,10 +29,10 @@ Right: "With InterviewCoach" — 3D scene with sitting characters, STAR scores, 
 
 ## Slide 3: HOW IT WORKS (15 seconds — 4 icons in a row)
 
-1. **Upload Resume** → AI extracts your profile (Gemini multimodal)
-2. **Research** → Scrapes Reddit, LeetCode, Glassdoor for real questions (TinyFish)
-3. **3D Interview** → Voice-based mock with sitting, gesturing AI interviewer (Three.js + Speechmatics)
-4. **STAR Feedback** → Sentence-level analysis + spoken feedback + voice Q&A (Gemini + Claude Haiku)
+1. **Upload Resume** → Our AI extracts your profile (Gemini multimodal)
+2. **Research** → We scrape Reddit, LeetCode, Glassdoor for real questions (TinyFish)
+3. **3D Interview** → Voice-based mock with our sitting, gesturing AI interviewer (Three.js + Speechmatics)
+4. **STAR Feedback** → Our dual-model system delivers sentence-level analysis + spoken feedback + voice Q&A (Gemini + Claude Haiku)
 
 ---
 
@@ -60,13 +60,15 @@ Right: "With InterviewCoach" — 3D scene with sitting characters, STAR scores, 
                └─────────────┘
 ```
 
-**3D Scene (Three.js):** Characters sit at interview table with mouth animation, head bobs, periodic hand gestures, and speech bubbles projected from 3D→2D coordinates.
+**3D Scene (Three.js):** Our team built characters that sit at an interview table with mouth animation, periodic hand gestures, word-by-word feedback highlighting, and speech bubbles projected from 3D→2D coordinates.
 
-**Sponsors: InsForge (DB + AI Gateway), TinyFish (Web Scraping), Speechmatics (STT), Anthropic Claude Haiku, Google Gemini**
+**Sponsors we integrated: InsForge (DB + AI Gateway), TinyFish (Web Scraping), Speechmatics (STT), Anthropic Claude Haiku, Google Gemini**
 
 ---
 
 ## Slide 5: ETHICAL DESIGN (10 seconds)
+
+**Our team prioritized responsible AI from day one:**
 
 - AI feedback supplements human mentorship, doesn't replace it
 - No audio stored on servers — transcription is real-time only
@@ -85,7 +87,7 @@ Right: "With InterviewCoach" — 3D scene with sitting characters, STAR scores, 
 - Company-specific intelligence for 8+ companies (Amazon LPs, Google, Meta, etc.)
 - Tracks improvement across sessions with adaptive difficulty
 - Voice-first design: answer by voice, ask about feedback by voice
-- Built for first-gen students, career changers, and non-native speakers
+- We built this for first-gen students, career changers, and non-native speakers
 
 GitHub: github.com/metalgenesis123321/CBC-Hackathon
 Live: [your Vercel URL]
@@ -100,3 +102,4 @@ Live: [your Vercel URL]
 - **Slide count**: 6 slides MAX. More slides = less impact.
 - **No bullet point slides**: If you have more than 3 bullets, you have too many words
 - **Show the 3D scene**: The sitting characters with hand gestures are your biggest differentiator — make it prominent
+- **Team language**: Always say "we built", "our system", "our team" — never "I built"
