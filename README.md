@@ -12,12 +12,12 @@ Existing interview prep platforms rely on static questions, lack adaptability to
 
 **Specifically:**
 
-- **No follow-up questions** — Real interviewers probe deeper based on what you said. Every existing tool just moves to the next unrelated question.
-- **No way to ask about your feedback** — You get a score and a wall of text. You can't ask "why was my Result section weak?" There's no conversation.
-- **No replay** — You can't re-listen to what you actually said. You forget your mistakes within minutes.
-- **Static question banks** — The same generic questions regardless of your company, role, or weak areas. Nothing adapts.
-- **No adaptive difficulty or presentation** — Questions don't get harder as you improve, and feedback is dumped as a wall of text instead of being spoken, highlighted, and interactive.
-- **Interview coaching costs $200–500/session** — First-gen students, career changers, and non-native speakers are hit the hardest.
+* **No follow-up questions** — Real interviewers probe deeper based on what you said. Every existing tool just moves to the next unrelated question.
+* **No way to ask about your feedback** — You get a score and a wall of text. You can't ask "why was my Result section weak?" There's no conversation.
+* **No replay** — You can't re-listen to what you actually said. You forget your mistakes within minutes.
+* **Static question banks** — The same generic questions regardless of your company, role, or weak areas. Nothing adapts.
+* **No adaptive difficulty or presentation** — Questions don't get harder as you improve, and feedback is dumped as a wall of text instead of being spoken, highlighted, and interactive.
+* **Interview coaching costs $200–500/session** — First-gen students, career changers, and non-native speakers are hit the hardest.
 
 **We built InterviewCoach AI to solve all of this:** a free, voice-first mock interview platform where an AI interviewer sits across from you in a 3D office, asks real company-specific questions, generates adaptive follow-ups, scores your STAR structure sentence-by-sentence, speaks personalized feedback out loud, and lets you ask questions about your score — all in real time. The first interview prep tool that gives you **feedback on the feedback**.
 
@@ -25,368 +25,111 @@ Existing interview prep platforms rely on static questions, lack adaptability to
 
 ## What Makes This Different
 
-**We checked every interview prep platform — none of them give you feedback on the feedback.**
+* **Claude-powered 3D interaction (Artifacts)** — We leveraged Claude Artifacts to help design and simulate the interactive 3D interview experience, enabling rapid iteration on conversational UI + visual behavior.
 
-- **Real-time spoken feedback** — Our AI interviewer *talks* to you, explains what went wrong, and highlights words as it speaks — like a real debrief after an interview.
-- **Feedback on the feedback** — Ask questions about your score by voice or text. "Why was my Result weak?" → Claude explains, gives a rewrite, and creates a coaching plan.
-- **Adaptive questions & presentation** — Follow-ups based on *what you just said*, difficulty that scales with your progress, and feedback delivered interactively — not dumped as a wall of text.
-- **3D interview experience** — Two characters sitting at a table, gesturing, speaking, reacting. It's not a chatbox — it's an experience.
+* **Real-time spoken feedback** — The AI interviewer talks through what went well and what needs work, instead of dropping a wall of text.
 
----
+* **Feedback on the feedback** — Ask follow-up questions like "Why was my Result weak?" and get a rewrite plus coaching guidance.
 
-## How We Used Each Sponsor
+* **Adaptive to the user** — Questions, follow-ups, and coaching adjust to your weak areas and improvement over time.
 
-| Sponsor | What We Built With It | Why It's Core |
-|---|---|---|
-| **Anthropic Claude Haiku** | The "interviewer brain" — generates spoken feedback as a senior interviewer, creates follow-up questions based on your specific answer, powers the "ask about feedback" voice/text Q&A, writes personalized coaching plans with example rewrites | Without Claude, the feedback would be robotic bullet points. Claude makes it feel like talking to a real interviewer who cares about your growth. |
-| **InsForge** | AI Model Gateway (routes all models through a single endpoint), PostgreSQL database (users, sessions, answers, weak areas, progress), pgvector for semantic question matching | InsForge is our entire backend — every API call, every saved answer, every progress data point flows through it. |
-| **TinyFish** | AI browser automation that scrapes real interview experiences from Reddit, LeetCode, Glassdoor, GeeksForGeeks, and IGotAnOffer | Our questions aren't generic — they're based on what real candidates were actually asked at each company this year. |
-| **Speechmatics** | Real-time speech-to-text transcription during the interview — candidate speaks, words appear live | Voice-first design. Typing interview answers doesn't prepare you for speaking them out loud. |
+* **3D interview experience** — A realistic interview scene makes the practice feel closer to a real conversation than a chatbox.
 
 ---
 
 ## What It Does
 
-InterviewCoach helps job seekers practice interviews with AI in an immersive 3D office environment. Upload your resume, pick a target company, and our system generates personalized questions based on real interview data scraped from Reddit, LeetCode, Glassdoor, and GeeksForGeeks. Answer via voice, get real-time transcription, and receive deeply structured STAR-framework feedback with sentence-level analysis — all tracked over time so you can see exactly where you're improving.
+InterviewCoach helps job seekers practice interviews in an immersive 3D office environment. Users upload a resume, choose a target company and role, and receive personalized questions based on real interview data. They answer by voice, get real-time transcription, and receive structured STAR feedback with sentence-level analysis, delivery analysis, follow-up questions, and coaching plans.
 
-### Key Features
+---
 
-- **3D Mock Interview Scene** — Three.js office with human-like interviewer & candidate characters (facial features: nose, ears, eyebrows, chin, lips, eye sclera/pupils), glasses on interviewer, speech bubbles via 3D→2D projection, speaker glow lighting
-- **Dynamic Feedback Highlighting** — Word-by-word text highlighting synced to TTS playback (blue glow on active word, yellow for spoken, dim for upcoming) with auto-scroll
-- **Ask About Feedback** — After receiving feedback, candidates can ask follow-up questions about the feedback — AI responds conversationally like a real interviewer debrief
-- **Voice Pipeline** — Speechmatics real-time STT for transcription, Web Speech API for TTS feedback delivery
-- **Resume Upload & Auto-Fill** — Upload PDF/DOCX/TXT, Gemini multimodal API extracts text and fills your profile
-- **Internet Research** — TinyFish AI browser automation scrapes Reddit, LeetCode, Glassdoor, GFG, IGotAnOffer for real interview experiences
-- **Personalized Question Generation** — AI generates questions based on your profile, company, and research data
-- **STAR Framework Scoring** — Situation, Task, Action, Result scored individually (0-100)
-- **Sentence-Level Analysis** — Every sentence rated as strong/okay/weak with rewrites
-- **Delivery Analysis** — Filler words, hedging phrases, power words, active voice %, pacing
-- **Follow-Up Questions** — AI generates contextual follow-ups based on your answers
-- **Adaptive Sessions** — Targets your weak areas with progressively harder questions
-- **Company-Specific Intelligence** — Built-in profiles for Amazon (LPs), Google, Meta, Microsoft, Apple, Netflix
-- **Full Analysis in History** — Complete per-question analysis (STAR scores, sentence analysis, delivery, coaching tips, ideal answer) stored in DB and retrievable from History tab
-- **Progress Tracking** — Score trends, weak area tracking with improving/stable/declining trends
-- **Bento Design System** — Clean card-based UI with focus animations, pill selectors, gradient accents
-- **Cloud Persistence** — All data synced to InsForge PostgreSQL
-- **Google OAuth** — Auto-detecting redirect URIs for localhost + Vercel production
+## Key Features
+
+* 🧍‍♂️ **3D Interview Scene** — Immersive mock interview environment
+* 🎤 **Voice-First Interaction** — Speak answers with real-time transcription
+* 🧠 **Adaptive AI Interviewer** — Dynamic questions and follow-ups based on your answers
+* 📊 **STAR Scoring** — Situation, Task, Action, Result breakdown
+* ✍️ **Sentence-Level Feedback** — Rewrites and targeted improvements
+* 💬 **Ask About Feedback** — Interactive Q&A on your performance
+* 📈 **Progress Tracking** — Weak areas and score trends over time
+* 🏢 **Company-Specific Prep** — Tailored questions for top companies
+* 🔁 **Adaptive Practice** — Focuses on your weak areas as you improve
+* ☁️ **Cloud Sync** — Sessions and feedback saved automatically
+
+---
+
+## How We Used Each Sponsor
+
+| Sponsor                    | What We Built With It                                                                                                                                                      | Why It's Core                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Anthropic Claude Haiku** | Interviewer brain for spoken feedback, follow-up questions, ask-about-feedback Q&A, coaching plans, adaptive guidance, and Claude Artifacts for 3D interaction prototyping | Makes the experience feel like a real interviewer instead of a chatbot |
+| **InsForge**               | AI Model Gateway, PostgreSQL database, and pgvector semantic matching                                                                                                      | Powers the backend for sessions, answers, progress, and search         |
+| **TinyFish**               | AI browser automation for scraping interview experiences                                                                                                                   | Keeps questions grounded in real, current interview patterns           |
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    FRONTEND (Next.js)                    │
-│                                                          │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ Login /  │  │  Dashboard   │  │  3D Interview     │  │
-│  │ Onboard  │  │  + History   │  │  Scene (Three.js) │  │
-│  └────┬─────┘  └──────┬───────┘  └────────┬──────────┘  │
-│       │               │                    │             │
-│       │    ┌──────────────────────┐        │             │
-│       │    │ Speech Pipeline      │        │             │
-│       │    │ STT: Speechmatics RT │        │             │
-│       │    │ TTS: Web Speech API  │        │             │
-│       │    └──────────────────────┘        │             │
-└───────┼───────────┼───────────────────────┼─────────────┘
-        │           │                       │
-        ▼           ▼                       ▼
-┌─────────────────────────────────────────────────────────┐
-│                   API ROUTES (Next.js)                   │
-│                                                          │
-│  /api/auth/google/*     Google OAuth (auto-detect host)  │
-│  /api/parse-resume      PDF→text via Gemini multimodal   │
-│  /api/generate-questions Gemini: role+resume→questions   │
-│  /api/mock-feedback     Dual-model feedback pipeline     │
-│  /api/cloud-*           DB CRUD (sessions, answers,      │
-│                         weak areas, embeddings)          │
-│  /api/match-question    Semantic similarity search       │
-└──────────────┬──────────────────────────┬───────────────┘
-               │                          │
-               ▼                          ▼
-┌──────────────────────────────────┐   ┌──────────────────────────────┐
-│     InsForge AI Model Gateway    │   │   InsForge PostgreSQL DB     │
-│                                  │   │                              │
-│  Gemini 2.5 Flash (Analyst)      │   │  users, sessions, answers    │
-│  → STAR scoring, research,       │   │  weak_areas,                 │
-│    resume parsing, questions     │   │  question/answer/ideal       │
-│                                  │   │  _embeddings                 │
-│  Claude Haiku (Interviewer)      │   │                              │
-│  → Follow-ups, feedback, Q&A,   │   │                              │
-│    coaching, adaptive questions  │   │                              │
-└──────────────────────────────────┘   └──────────────────────────────┘
+```text
+Frontend (Next.js)
+├── Login / Onboarding
+├── Dashboard + History
+├── 3D Interview Scene (Three.js)
+└── Voice Pipeline
+    ├── Speechmatics STT
+    └── Web Speech API TTS
+
+API Routes (Next.js)
+├── /api/auth/google/*
+├── /api/parse-resume
+├── /api/generate-questions
+├── /api/mock-feedback
+├── /api/cloud-*
+└── /api/match-question
+
+Backend
+├── InsForge AI Model Gateway
+│   ├── Gemini 2.5 Flash Lite for analysis, research, and scoring
+│   └── Claude Haiku for interviewer-style feedback and follow-ups
+└── InsForge PostgreSQL + pgvector
 ```
 
-### Data Flow
+---
 
-```
-User registers/logs in (Email/Password or Google OAuth)
-        |
-        v
-Onboarding Wizard (5 steps)
-  1. Profile (name, resume upload, skills, target roles)
-  2. Interview Type (behavioral / technical / system design / mixed)
-  3. Company & Role (company, years exp, round type, JD)
-  4. Internet Research (AI searches Reddit/LeetCode/Glassdoor/GFG)
-  5. Question Generation (5 personalized questions)
-        |
-        v
-Interview Session (Dual-Model AI Pipeline)
-  - Display question (text + TTS voice)
-  - Record answer (Speechmatics real-time STT)
-  - Gemini analyzes STAR structure → scores, sentence ratings, delivery metrics
-  - Claude Haiku humanizes feedback → natural interviewer speech
-  - Claude generates targeted follow-up questions based on your answer
-  - Claude handles ask-about-feedback conversation
-  - 3D scene shows interviewer/candidate with word-by-word highlighted speech bubbles
-  - Full analysis saved to DB per question
-  - Session summary with Claude coaching plan (priority skill + example rewrite)
-        |
-        v
-Progress Dashboard
-  - Score trends over time
-  - Weak area tracking (15 competencies)
-  - Communication habits analysis
-  - Cross-session AI analysis
-        |
-        v
-History Tab
-  - Per-question full analysis retrieval
-  - STAR scores, sentence analysis, delivery metrics
-  - Coaching tips, ideal answer structure
-  - Weak area trends (improving/stable/declining)
-```
+## Data Flow
+
+1. User registers or logs in with email/password or Google OAuth.
+2. User completes onboarding with resume, role, and company details.
+3. The app researches real interview patterns and generates personalized questions.
+4. The user answers by voice.
+5. Speechmatics transcribes the response in real time.
+6. Gemini scores STAR structure, sentence quality, and delivery.
+7. Claude turns the analysis into natural spoken feedback and follow-ups.
+8. Progress, weak areas, and full feedback are saved for history and review.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Next.js 14 (App Router) | React framework with SSR |
-| **3D Scene** | Three.js | Immersive interview office environment |
-| **Styling** | Tailwind CSS v3 | Light/dark theme UI with custom animations |
-| **Language** | TypeScript | Type safety |
-| **AI Gateway** | InsForge Model Gateway | Unified AI model routing |
-| **AI Model** | Gemini 2.5 Flash Lite | Question generation, STAR analysis, research |
-| **AI Model** | Claude Haiku (Anthropic) | Interviewer persona: humanized feedback, follow-up questions, coaching plans, feedback Q&A, adaptive questions |
-| **Database** | InsForge PostgreSQL 15 | Users, sessions, answers, weak areas |
-| **Vector DB** | pgvector on PostgreSQL | Semantic question search (3072d embeddings) |
-| **Auth** | JWT (jose) + bcryptjs | Email/password + Google OAuth |
-| **Voice STT** | Speechmatics Realtime API | Real-time speech-to-text transcription |
-| **Voice TTS** | Web Speech API | Browser-native text-to-speech |
-| **PDF Parsing** | Gemini Multimodal API | Resume PDF text extraction (serverless-compatible) |
-| **DOCX Parsing** | jszip | Resume DOCX extraction |
-
-### Dual-Model AI Architecture
-
-| Role | Model | Tasks |
-|------|-------|-------|
-| **The Analyst** | Gemini 2.5 Flash | STAR scoring, sentence-level analysis, delivery metrics, research synthesis, resume parsing, question generation |
-| **The Interviewer** | Claude Haiku (Anthropic) | Humanized spoken feedback, follow-up question generation, ask-about-feedback Q&A, adaptive question targeting, post-session coaching plans |
-
-All Claude calls include an `interviewerPersona` system prompt — a senior interviewer with 15+ years of experience who stays in character throughout the session. If Claude is unavailable, all actions fall back to Gemini automatically.
-
-### Hackathon Sponsor Integrations
-
-> See [How We Used Each Sponsor](#how-we-used-each-sponsor) at the top for the full breakdown.
-
-- **Anthropic Claude Haiku** — Interviewer persona: spoken feedback, follow-up questions, ask-about-feedback Q&A, coaching plans, adaptive questions
-- **InsForge** — PostgreSQL database, AI Model Gateway, vector database (pgvector)
-- **TinyFish** — AI browser automation for scraping real interview data from 5 sources (Reddit, LeetCode, Glassdoor, GeeksForGeeks, IGotAnOffer)
-- **Speechmatics** — Real-time speech-to-text transcription for voice-first interview experience
-
----
-
-## Project Structure
-
-```
-src/
-├── app/
-│   ├── api/
-│   │   ├── auth/           # Auth endpoints (login, register, Google OAuth, me, logout, profile)
-│   │   ├── adaptive/       # AI session generation & progress analysis
-│   │   ├── db/             # PostgreSQL database operations
-│   │   ├── feedback/       # Per-question STAR feedback + session summary
-│   │   ├── parse-profile/  # AI profile extraction from resume/context
-│   │   ├── parse-resume/   # PDF (Gemini multimodal) / DOCX / TXT parsing
-│   │   ├── mock-feedback/   # Dual-model: Gemini STAR analysis + Claude interviewer (follow-ups, coaching, Q&A, adaptive)
-│   │   ├── research/       # Company interview research via TinyFish + Gemini
-│   │   ├── cloud-save-answer/ # Save individual answer with full analysis to DB
-│   │   ├── cloud-save-session/ # Save session summary to DB
-│   │   └── vector/         # Vector similarity search (pgvector)
-│   ├── login/              # Login/register page
-│   ├── profile/            # Profile editing (bento design, auto-fill from JD)
-│   ├── onboarding/         # 5-step setup wizard
-│   ├── page.tsx            # Main interview dashboard (Interview, 3D Mock, Progress, History tabs)
-│   ├── layout.tsx          # Root layout with AuthProvider + theme script
-│   └── globals.css         # Tailwind + custom animations + light/dark theme variables
-├── components/
-│   ├── InterviewArtifactScene.tsx  # 3D Three.js interview scene (office, characters, speech bubbles)
-│   ├── VoiceRecorder.tsx   # Voice input with Speechmatics real-time STT
-│   ├── FeedbackCard.tsx    # Rich feedback visualization
-│   └── ProgressDashboard.tsx # Stats, trends, weak areas
-└── lib/
-    ├── auth.ts             # JWT, password hashing, DB auth functions
-    ├── auth-context.tsx    # React Context for client-side auth state
-    ├── db.ts               # PostgreSQL queries (users, sessions, answers, weak_areas)
-    ├── store.ts            # localStorage persistence layer
-    ├── gemini.ts           # InsForge AI gateway client
-    ├── prompts.ts          # All prompt templates (feedback, summary, adaptive, progress)
-    ├── questions.ts        # 15-question bank + weak area taxonomy
-    ├── company-patterns.ts # Company-specific interview intelligence (8 companies)
-    └── cloud-sync.ts       # Client-side cloud sync wrapper
-```
-
----
-
-## Database Schema
-
-### users
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text (UUID) | Primary key |
-| email | text | Unique, lowercase |
-| password_hash | text | bcrypt hash |
-| google_id | text | Google OAuth ID |
-| name | text | Display name |
-| avatar_url | text | Profile picture |
-| background | text | Career summary |
-| target_role | text | Primary target role |
-| target_company | text | Target company |
-| experience | text | Work history |
-| skills | text | Comma-separated skills |
-| resume_text | text | Full resume content |
-| llm_context | text | AI-generated context |
-| target_roles | text[] | Multiple target roles |
-| interview_type | text | behavioral/technical/system_design/mixed |
-| onboarded | boolean | Completed setup |
-
-### sessions
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text | Session ID |
-| user_id | text | Foreign key to users |
-| company | text | Company practiced for |
-| role | text | Role practiced for |
-| answer_count | int | Questions answered |
-| avg_score | int | Average score |
-| weak_areas | text[] | Areas identified |
-| session_number | int | Sequential number |
-| session_summary | jsonb | AI-generated summary |
-
-### answers
-| Column | Type | Description |
-|--------|------|-------------|
-| id | text | Answer ID |
-| session_id | text | Foreign key to sessions |
-| user_id | text | Foreign key to users |
-| question_text | text | The question asked |
-| answer_text | text | User's full answer |
-| feedback | jsonb | Complete analysis (STAR scores, sentence analysis, delivery, coaching) |
-| duration_sec | int | Answer duration |
-
-### weak_areas
-| Column | Type | Description |
-|--------|------|-------------|
-| user_id | text | Foreign key to users |
-| area | text | Competency area |
-| total_occurrences | int | Times flagged |
-| score_history | int[] | Score progression |
-| avg_score | int | Current average |
-| trend | text | improving/stable/declining |
-
----
-
-## AI Feedback Structure
-
-Each answer receives a deeply structured `FeedbackResult`:
-
-```json
-{
-  "overall_score": 78,
-  "star_scores": { "situation": 70, "task": 80, "action": 85, "result": 60 },
-  "dimension_scores": { "clarity": 80, "confidence": 75, "conciseness": 70, "storytelling": 85, "technical_accuracy": 90 },
-  "sentence_analysis": [
-    { "sentence": "...", "rating": "strong", "reason": "...", "rewrite": "...", "tags": ["quantified", "ownership"] }
-  ],
-  "delivery_analysis": {
-    "filler_words": ["um", "like"],
-    "hedging_phrases": ["I think"],
-    "power_words": ["spearheaded", "delivered"],
-    "active_voice_pct": 85,
-    "pacing": "good"
-  },
-  "strengths": ["Clear ownership language", "Quantified results"],
-  "improvements": ["Add more context to the Situation"],
-  "coaching_tip": "Lead with the business impact before the technical details",
-  "follow_up_question": "Can you elaborate on the technical challenges you faced?",
-  "ideal_answer_structure": { "situation": "...", "task": "...", "action": "...", "result": "..." },
-  "weak_areas": ["situation_context", "result_quantification"]
-}
-```
-
-### 15 Tracked Competencies
-
-| Area | Description |
-|------|-------------|
-| situation_context | Setting clear context |
-| task_clarity | Defining your specific task |
-| action_specificity | Detailing what YOU did |
-| result_quantification | Quantifying outcomes |
-| technical_depth | Technical knowledge depth |
-| system_design | Architecture thinking |
-| trade_offs | Analyzing trade-offs |
-| communication_clarity | Clear communication |
-| conciseness | Being concise |
-| confidence | Speaking with confidence |
-| leadership_signals | Leadership evidence |
-| customer_focus | Customer-centric thinking |
-| data_driven | Using data to decide |
-| ownership | Taking ownership |
-| bias_for_action | Showing initiative |
-
----
-
-## 3D Interview Scene
-
-The 3D mock interview uses Three.js to render an immersive office environment:
-
-- **Office** — Dark-themed room with bookshelf, plant, window with emissive glass, ceiling light panel, rug
-- **Characters** — Human-like figures with MeshStandardMaterial: detailed faces (eye sclera + pupils, cone nose with bridge + nostrils, upper/lower lips, chin, ears, eyebrows), full hair (top, sides, back), proportionally scaled (0.62x)
-- **Interviewer** — Darker skin tone, gray hair, glasses (torus frames + temple arms), purple tie
-- **Candidate** — Lighter skin tone, brown hair, blue shirt
-- **Furniture** — Table with laptop, notepad, pen, water glass; scaled ergonomic chairs
-- **Lighting** — Ambient + directional key/fill/rim lights, PCFSoftShadowMap, FogExp2
-- **Speech Bubbles** — HTML overlays via 3D→2D projection, feedback mode with word-by-word TTS highlighting (blue active, yellow spoken, dim upcoming)
-- **Speaker Glow** — PointLight that follows the active speaker with color per speaker
-- **Camera** — Positioned at (0, 2.0, 4.2) with subtle breathing animation
-- **Ask About Feedback** — Input field appears after feedback, AI responds conversationally via TTS
-
----
-
-## Company Intelligence
-
-Built-in interview profiles for 8 companies:
-
-| Company | Focus | Behavioral Weight |
-|---------|-------|-------------------|
-| Amazon | 16 Leadership Principles, ownership, metrics | 50% |
-| Google | Googliness, cognitive ability, structured | 30% |
-| Meta | Impact, scale, move fast, builder mindset | 35% |
-| Microsoft | Growth mindset, collaboration, inclusivity | 40% |
-| Apple | Craftsmanship, attention to detail | 35% |
-| Netflix | Freedom & responsibility, candid feedback | 40% |
-| Startup | Ship fast, full-stack, resourcefulness | 30% |
-| General | STAR framework, problem-solving | 40% |
+* **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Three.js
+* **Backend:** Next.js API Routes
+* **AI Gateway:** InsForge Model Gateway
+* **AI Models:** Gemini 2.5 Flash Lite, Claude Haiku
+* **Database:** InsForge PostgreSQL 15 + pgvector
+* **Auth:** JWT, bcryptjs, Google OAuth
+* **Voice STT:** Speechmatics Realtime API
+* **Voice TTS:** Web Speech API
+* **PDF Parsing:** Gemini multimodal API
+* **DOCX Parsing:** jszip
 
 ---
 
 ## Setup & Run
 
 ### Prerequisites
-- Node.js 18+
-- InsForge account with PostgreSQL + Model Gateway enabled
+
+* Node.js 18+
+* InsForge account with PostgreSQL and Model Gateway enabled
 
 ### Installation
 
@@ -401,29 +144,16 @@ npm install
 Create `.env.local`:
 
 ```env
-# AI Model (via InsForge Gateway)
 AI_MODEL=google/gemini-2.5-flash-lite
-
-# Gemini API Key (for vector embeddings only)
 GEMINI_API_KEY=your_gemini_api_key
-
-# InsForge Backend
 INSFORGE_PROJECT_URL=https://your-project.us-east.insforge.app
 INSFORGE_API_KEY=your_insforge_api_key
 INSFORGE_ANON_KEY=your_anon_key
 INSFORGE_DB_URL=postgresql://postgres:password@your-project.us-east.database.insforge.app:5432/insforge?sslmode=require
-
-# Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Auth
 JWT_SECRET=your_jwt_secret
-
-# Speechmatics (for real-time STT)
 SPEECHMATICS_API_KEY=your_speechmatics_api_key
-
-# TinyFish (for interview data scraping)
 TINYFISH_API_KEY=your_tinyfish_api_key
 ```
 
@@ -431,7 +161,6 @@ TINYFISH_API_KEY=your_tinyfish_api_key
 
 ```bash
 npm run dev
-# Open http://localhost:3000
 ```
 
 ### Deploy to Vercel
@@ -440,47 +169,38 @@ npm run dev
 vercel --prod
 ```
 
-Import the GitHub repo in Vercel, add all environment variables above, and ensure the Google Cloud Console has your Vercel domain added as an authorized OAuth redirect URI (`https://your-domain.vercel.app/api/auth/google/callback`).
-
-### Build
-
-```bash
-npm run build
-npm start
-```
+Add the environment variables above in Vercel and register the OAuth redirect URI:
+`https://your-domain.vercel.app/api/auth/google/callback`
 
 ---
 
 ## API Endpoints
 
 ### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register with email/password |
-| POST | `/api/auth/login` | Login with email/password |
-| GET | `/api/auth/google` | Initiate Google OAuth (auto-detects redirect URI) |
-| GET | `/api/auth/google/callback` | Google OAuth callback (auto-detects origin) |
-| GET | `/api/auth/me` | Get current authenticated user |
-| POST | `/api/auth/profile` | Update user profile |
-| POST | `/api/auth/logout` | Clear auth cookie |
+
+* `POST /api/auth/register` — Register with email/password
+* `POST /api/auth/login` — Login with email/password
+* `GET /api/auth/google` — Start Google OAuth
+* `GET /api/auth/google/callback` — Google OAuth callback
+* `GET /api/auth/me` — Get current user
+* `POST /api/auth/profile` — Update user profile
+* `POST /api/auth/logout` — Clear auth cookie
 
 ### AI & Interview
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/feedback` | Get STAR feedback for an answer |
-| POST | `/api/mock-feedback` | Dual-model pipeline: Gemini STAR analysis + Claude Haiku interviewer (follow-ups, feedback, coaching, Q&A, adaptive questions) |
-| POST | `/api/adaptive` | Generate adaptive session or analyze progress |
-| POST | `/api/research` | Scrape real interview data via TinyFish (Reddit, LeetCode, Glassdoor, GFG, IGotAnOffer) + Gemini synthesis |
-| POST | `/api/parse-resume` | Extract text from PDF (Gemini multimodal) / DOCX / TXT |
-| POST | `/api/parse-profile` | AI-extract profile from resume text |
+
+* `POST /api/feedback` — STAR feedback for one answer
+* `POST /api/mock-feedback` — Dual-model feedback pipeline
+* `POST /api/adaptive` — Generate adaptive sessions or analyze progress
+* `POST /api/research` — Scrape and synthesize real interview data
+* `POST /api/parse-resume` — Extract resume text from PDF, DOCX, or TXT
+* `POST /api/parse-profile` — AI profile extraction from resume text
 
 ### Data
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/db` | Database operations (sessions, answers, stats) |
-| POST | `/api/cloud-save-answer` | Save answer with full analysis to DB |
-| POST | `/api/cloud-save-session` | Save session summary to DB |
-| POST | `/api/vector` | Vector similarity search operations |
+
+* `POST /api/db` — Database operations
+* `POST /api/cloud-save-answer` — Save answer with full analysis
+* `POST /api/cloud-save-session` — Save session summary
+* `POST /api/vector` — Vector similarity search
 
 ---
 
@@ -488,14 +208,14 @@ npm start
 
 We believe AI interview tools carry real responsibility. Here's how we address potential harms:
 
-| Concern | How We Address It |
-|---------|-------------------|
-| **AI replacing human mentors** | Every feedback screen is labeled "AI-Generated" and the app explicitly states it supplements, not replaces, human mentorship |
-| **Privacy of spoken answers** | Audio is transcribed in real-time via Speechmatics WebSocket — raw audio is never uploaded or stored on our servers. Transcripts are stored only if the user opts to save |
-| **Cultural bias in feedback** | STAR framework scoring evaluates structure and content, not accent, grammar, or cultural communication style. We don't penalize non-native English patterns |
-| **Encouraging scripted answers** | Follow-up questions probe deeper into answers to test authenticity. The system rewards genuine experience over rehearsed responses |
-| **Overconfidence in AI scores** | Scores are presented as practice indicators with context ("Getting There", "Almost Ready"), not as definitive hiring predictions |
-| **Data ownership** | Users can see exactly what data is stored (profile, transcripts, scores) and all data is tied to their account |
+| Concern                          | How We Address It                                                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AI replacing human mentors**   | Every feedback screen is labeled "AI-Generated" and the app explicitly states it supplements, not replaces, human mentorship                                              |
+| **Privacy of spoken answers**    | Audio is transcribed in real time via Speechmatics WebSocket — raw audio is never uploaded or stored on our servers. Transcripts are stored only if the user opts to save |
+| **Cultural bias in feedback**    | STAR framework scoring evaluates structure and content, not accent, grammar, or cultural communication style. We don't penalize non-native English patterns               |
+| **Encouraging scripted answers** | Follow-up questions probe deeper into answers to test authenticity. The system rewards genuine experience over rehearsed responses                                        |
+| **Overconfidence in AI scores**  | Scores are presented as practice indicators with context ("Getting There", "Almost Ready"), not as definitive hiring predictions                                          |
+| **Data ownership**               | Users can see exactly what data is stored (profile, transcripts, scores) and all data is tied to their account                                                            |
 
 ---
 
