@@ -3,14 +3,18 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
-  title: "Interview Coach — AI-Powered Mock Interviews",
-  description: "Practice interviews with AI. Get structured STAR feedback, track weak spots, and improve over time.",
+  title: "InterviewCoach — AI-Powered Mock Interviews",
+  description: "Practice interviews with AI feedback. Track weak spots and improve over time.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <head>
+        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#000000" />
+      </head>
+      <body style={{ margin: 0, padding: 0, background: "#000", minHeight: "100vh" }}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

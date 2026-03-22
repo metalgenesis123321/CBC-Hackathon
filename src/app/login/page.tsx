@@ -1,141 +1,109 @@
 "use client";
-import { useState } from "react";
-import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const { login, register } = useAuth();
   const router = useRouter();
-  const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const result = isRegister
-      ? await register(email, password, name)
-      : await login(email, password);
-
-    if (result.ok) {
-      router.push("/onboarding");
-    } else {
-      setError(result.error || "Something went wrong");
-    }
-    setLoading(false);
-  };
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-accent">InterviewCoach</h1>
-          <p className="text-sm text-muted mt-2">AI-powered mock interviews with real feedback</p>
+    <div style={{ minHeight: "100vh", background: "#080d18", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+
+      {/* Glow */}
+      <div style={{ position: "absolute", top: -300, left: "35%", width: 1000, height: 1000, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(34,211,238,0.08) 0%, rgba(129,140,248,0.05) 40%, transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: -200, right: -100, width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(129,140,248,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
+
+      {/* Nav */}
+      <nav style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "28px 72px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #22d3ee, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+          </div>
+          <span style={{ fontSize: 20, fontWeight: 700, color: "white", letterSpacing: "-0.01em" }}>InterviewCoach</span>
         </div>
+        <button onClick={() => router.push("/login/signin?mode=login")} style={{ padding: "13px 32px", borderRadius: 999, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", fontSize: 17, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+          Sign in
+        </button>
+      </nav>
 
-        {/* Card */}
-        <div className="bg-card border border-border rounded-2xl p-8 space-y-6">
-          <h2 className="text-xl font-bold text-slate-200 text-center">
-            {isRegister ? "Create Account" : "Welcome Back"}
-          </h2>
+      {/* Main content */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", position: "relative", zIndex: 5, padding: "0 72px 72px" }}>
+        <div style={{ width: "100%", maxWidth: 1400, display: "flex", gap: 80, alignItems: "center", margin: "0 auto" }}>
 
-          {error && (
-            <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
-              <div>
-                <label className="text-xs text-muted font-semibold block mb-1">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Your name"
-                  required
-                  className="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-200 focus:border-accent focus:outline-none"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="text-xs text-muted font-semibold block mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                required
-                className="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-200 focus:border-accent focus:outline-none"
-              />
+          {/* LEFT — hero */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "9px 18px", borderRadius: 999, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)", marginBottom: 36 }}>
+              <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#22d3ee" }} />
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#22d3ee", letterSpacing: "0.03em" }}>Live AI feedback</span>
             </div>
 
-            <div>
-              <label className="text-xs text-muted font-semibold block mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={isRegister ? "Min 6 characters" : "Your password"}
-                required
-                minLength={6}
-                className="w-full bg-surface border border-border rounded-lg px-4 py-3 text-sm text-slate-200 focus:border-accent focus:outline-none"
-              />
+            <h1 style={{ fontSize: 98, fontWeight: 900, color: "white", lineHeight: 1.0, letterSpacing: "-0.05em", margin: "0 0 36px" }}>
+              Interview like<br />you&apos;ve done it<br />
+              <span style={{ background: "linear-gradient(90deg, #22d3ee, #818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>100 times.</span>
+            </h1>
+
+            <p style={{ fontSize: 22, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, marginBottom: 52, maxWidth: 480 }}>
+              Practice real questions, hear your answers back, and get scored instantly. No fluff — just targeted coaching that moves the needle.
+            </p>
+
+            <div style={{ display: "flex", gap: 16 }}>
+              <button onClick={() => router.push("/login/signin?mode=register")} style={{ padding: "20px 48px", borderRadius: 18, background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 20, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit", letterSpacing: "-0.01em" }}>
+                Get started free
+              </button>
+              <button onClick={() => router.push("/login/signin?mode=login")} style={{ padding: "20px 48px", borderRadius: 18, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.7)", fontSize: 20, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                Sign in
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent/80 disabled:opacity-50 transition-colors"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {isRegister ? "Creating account..." : "Logging in..."}
-                </span>
-              ) : isRegister ? "Create Account" : "Log In"}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted">or</span>
-            <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Google OAuth */}
-          <a
-            href="/api/auth/google"
-            className="w-full py-3 bg-surface border border-border rounded-lg font-semibold text-slate-200 hover:border-accent transition-colors flex items-center justify-center gap-3 text-sm"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </a>
+          {/* RIGHT — bento cards */}
+          <div style={{ width: 600, flexShrink: 0, display: "flex", flexDirection: "column", gap: 18 }}>
 
-          {/* Toggle */}
-          <p className="text-center text-sm text-muted">
-            {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              onClick={() => { setIsRegister(!isRegister); setError(""); }}
-              className="text-accent hover:underline font-semibold"
-            >
-              {isRegister ? "Log in" : "Sign up"}
-            </button>
-          </p>
+            {/* Question card */}
+            <div style={{ background: "rgba(17,25,45,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "36px 40px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>Question 3 of 5</div>
+              <div style={{ fontSize: 22, fontWeight: 600, color: "rgba(255,255,255,0.9)", lineHeight: 1.5, marginBottom: 22 }}>
+                &ldquo;Describe a situation where you had to make a decision with incomplete information.&rdquo;
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <span style={{ padding: "7px 18px", borderRadius: 999, fontSize: 15, fontWeight: 600, background: "rgba(34,211,238,0.12)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>Behavioral</span>
+                <span style={{ padding: "7px 18px", borderRadius: 999, fontSize: 15, fontWeight: 600, background: "rgba(129,140,248,0.12)", color: "#a5b4fc", border: "1px solid rgba(129,140,248,0.2)" }}>Decision-making</span>
+                <span style={{ padding: "7px 18px", borderRadius: 999, fontSize: 15, fontWeight: 600, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.1)" }}>Hard</span>
+              </div>
+            </div>
+
+            {/* Recording card */}
+            <div style={{ background: "rgba(17,25,45,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "36px 40px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 24 }}>Your Recording</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, height: 64, marginBottom: 20 }}>
+                {[12,26,16,40,18,50,30,44,14,36,24,13,30,46,12,32,44,16,28,10,22,38,18,48,14,40,26,50,12,32].map((h, i) => (
+                  <div key={i} style={{ width: 5, height: h, borderRadius: 3, background: "linear-gradient(180deg, #22d3ee, #818cf8)", flexShrink: 0 }} />
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f87171", flexShrink: 0 }} />
+                <span style={{ fontSize: 16, color: "rgba(255,255,255,0.4)" }}>Recording — 0:38</span>
+              </div>
+            </div>
+
+            {/* Session stats card */}
+            <div style={{ background: "rgba(17,25,45,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "36px 40px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 26 }}>Session Stats</div>
+              <div style={{ display: "flex", justifyContent: "space-around" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 58, fontWeight: 800, color: "#22d3ee", letterSpacing: "-0.04em", lineHeight: 1 }}>89</div>
+                  <div style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginTop: 10 }}>avg score</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 58, fontWeight: 800, color: "#818cf8", letterSpacing: "-0.04em", lineHeight: 1 }}>5</div>
+                  <div style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginTop: 10 }}>questions</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 58, fontWeight: 800, color: "#34d399", letterSpacing: "-0.04em", lineHeight: 1 }}>+12%</div>
+                  <div style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginTop: 10 }}>vs last</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
