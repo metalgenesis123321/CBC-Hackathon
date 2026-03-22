@@ -4,6 +4,8 @@
 
 :root {
   --bg: #050a14;
+  --nav-bg: rgba(5,10,20,0.85);
+  --card-bg: rgba(17,25,45,0.85);
   --cyan: #22d3ee;
   --violet: #818cf8;
   --cyan-dim: rgba(34,211,238,0.12);
@@ -12,12 +14,37 @@
   --surface-hi: rgba(255,255,255,0.07);
   --border: rgba(255,255,255,0.08);
   --border-hi: rgba(255,255,255,0.14);
-  --text: rgba(255,255,255,0.90);
-  --text-sec: rgba(255,255,255,0.52);
+  --text: rgba(255,255,255,0.88);
+  --text-sec: rgba(255,255,255,0.50);
   --text-tert: rgba(255,255,255,0.28);
+  --heading: #ffffff;
+  --input-bg: rgba(255,255,255,0.05);
+  --input-border: rgba(255,255,255,0.10);
+  --placeholder: rgba(255,255,255,0.22);
+  --card-shadow: none;
+  --divider: rgba(255,255,255,0.07);
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #f87171;
+}
+
+[data-theme="light"] {
+  --bg: #eef2f8;
+  --nav-bg: rgba(238,242,248,0.94);
+  --card-bg: rgba(255,255,255,0.88);
+  --surface: rgba(0,0,0,0.03);
+  --surface-hi: rgba(0,0,0,0.055);
+  --border: rgba(0,0,0,0.08);
+  --border-hi: rgba(0,0,0,0.14);
+  --text: rgba(10,15,35,0.88);
+  --text-sec: rgba(10,15,35,0.55);
+  --text-tert: rgba(10,15,35,0.40);
+  --heading: rgba(10,15,35,0.92);
+  --input-bg: rgba(0,0,0,0.035);
+  --input-border: rgba(0,0,0,0.12);
+  --placeholder: rgba(10,15,35,0.30);
+  --card-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  --divider: rgba(0,0,0,0.07);
 }
 
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
@@ -116,17 +143,17 @@ body {
 /* Input style */
 .ic-input {
   width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.10);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 12px;
   padding: 13px 16px;
   font-size: 15px;
-  color: rgba(255,255,255,0.9);
+  color: var(--text);
   outline: none;
   font-family: inherit;
   transition: all 0.2s;
 }
-.ic-input::placeholder { color: rgba(255,255,255,0.25); }
+.ic-input::placeholder { color: var(--placeholder); }
 .ic-input:focus {
   border-color: #22d3ee;
   background: rgba(34,211,238,0.05);

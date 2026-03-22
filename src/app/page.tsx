@@ -10,6 +10,7 @@ import { getProfile, saveUserProfile, recordAnswer, recordSession, getWeakAreas,
 import { cloudSaveSession, cloudSaveAnswer } from "@/lib/cloud-sync";
 import { useAuth } from "@/lib/auth-context";
 import dynamic from "next/dynamic";
+import AppNav from "@/components/AppNav";
 
 const InterviewArtifactScene = dynamic(() => import("@/components/InterviewArtifactScene"), { ssr: false });
 type Tab = "practice" | "progress" | "history" | "3d-interview";
@@ -17,8 +18,8 @@ type Tab = "practice" | "progress" | "history" | "3d-interview";
 interface AdaptiveQuestion { id: string; text: string; type: string; category: string; targets_weakness: string[]; difficulty: string; hint: string; company_context?: string; time_target_sec?: number; delivery_note?: string; }
 interface SessionPlan { session_plan: { focus_message: string; primary_weakness: string; expected_improvement: string; delivery_challenge?: string; }; questions: AdaptiveQuestion[]; }
 
-const T = { cyan: "#22d3ee", violet: "#818cf8", success: "#34d399", warning: "#fbbf24", danger: "#f87171", text: "rgba(255,255,255,0.88)", sec: "rgba(255,255,255,0.50)", tert: "rgba(255,255,255,0.26)" };
-const bento = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20 };
+const T = { cyan: "#22d3ee", violet: "#818cf8", success: "#34d399", warning: "#fbbf24", danger: "#f87171", text: "var(--text)", sec: "var(--text-sec)", tert: "var(--text-tert)" };
+const bento = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20 };
 const bentoHi = { background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.18)", borderRadius: 20 };
 const bentoVi = { background: "rgba(129,140,248,0.06)", border: "1px solid rgba(129,140,248,0.18)", borderRadius: 20 };
 function sc(s: number) { return s >= 85 ? T.success : s >= 70 ? T.cyan : s >= 50 ? T.warning : T.danger; }
@@ -127,40 +128,16 @@ export default function Home() {
   const TABS: { id: Tab; label: string }[] = [{ id: "practice", label: "Practice" }, { id: "3d-interview", label: "3D Mock" }, { id: "progress", label: "Progress" }, { id: "history", label: "History" }];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050a14", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", position: "relative" }}>
       {/* Ambient top glow */}
       <div style={{ position: "fixed", top: -200, left: "50%", transform: "translateX(-50%)", width: 800, height: 800, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(34,211,238,0.07) 0%, rgba(129,140,248,0.04) 45%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
-      {/* Nav */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(5,10,20,0.80)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 28px" }}>
-        <div style={{ maxWidth: 1040, margin: "0 auto", display: "flex", alignItems: "center", height: 56, gap: 0 }}>
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginRight: 28 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 9, background: "linear-gradient(135deg, #22d3ee, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-            </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "white", letterSpacing: "-0.02em" }}>InterviewCoach</span>
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 2, flex: 1 }}>
-            {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "all 0.18s", background: tab === t.id ? "rgba(34,211,238,0.12)" : "transparent", color: tab === t.id ? T.cyan : "rgba(255,255,255,0.40)", borderBottom: tab === t.id ? "1px solid rgba(34,211,238,0.35)" : "1px solid transparent" }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* User area */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.cyan }}>{user.name?.[0]?.toUpperCase()||"U"}</div>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>{user.name}</span>
-            <button onClick={() => router.push("/onboarding")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 999, color: "rgba(255,255,255,0.40)", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "5px 12px" }}>Setup</button>
-            <button onClick={() => { logout(); router.push("/login"); }} style={{ background: "none", border: "1px solid rgba(248,113,113,0.25)", borderRadius: 999, color: "rgba(248,113,113,0.7)", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "5px 12px" }}>Sign out</button>
-          </div>
-        </div>
-      </nav>
+      <AppNav
+        user={user}
+        activeTab={tab}
+        onTabChange={id => setTab(id as Tab)}
+        onSignOut={() => { logout(); router.push("/login"); }}
+      />
 
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "36px 40px 100px", position: "relative", zIndex: 1 }}>
 
@@ -176,12 +153,12 @@ export default function Home() {
                 <div style={{ ...bentoHi, padding: "36px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 40 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: T.cyan, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Ready to practise</div>
-                    <h2 style={{ fontSize: 34, fontWeight: 800, color: "white", letterSpacing: "-0.03em", margin: "0 0 10px" }}>
+                    <h2 style={{ fontSize: 34, fontWeight: 800, color: "var(--heading)", letterSpacing: "-0.03em", margin: "0 0 10px" }}>
                       {profile.targetCompany} · {profile.targetRole}
                     </h2>
                     <p style={{ fontSize: 16, color: T.sec, margin: "0 0 28px", lineHeight: 1.6, maxWidth: 560 }}>5 questions per session. Get scored after each answer or save all feedback for the end of the session.</p>
                     <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                      <button onClick={() => startSession(false)} style={{ padding: "14px 28px", borderRadius: 14, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)", color: "white", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Standard Session</button>
+                      <button onClick={() => startSession(false)} style={{ padding: "14px 28px", borderRadius: 14, background: "var(--surface-hi)", border: "1px solid var(--border-hi)", color: "var(--text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Standard Session</button>
                       <button onClick={() => startSession(true)} style={{ padding: "14px 28px", borderRadius: 14, background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
                         {getWeakAreas().length > 0 ? "Adaptive Session ✦" : "AI-Generated Session"}
                       </button>
@@ -213,7 +190,7 @@ export default function Home() {
                           {getWeakAreas().slice(0, 4).map(w => (
                             <div key={w.area} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <span style={{ fontSize: 14, color: T.text, flex: 1 }}>{WEAK_AREA_LABELS[w.area] || w.area}</span>
-                              <div style={{ width: 100, height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ width: 100, height: 4, background: "var(--surface-hi)", borderRadius: 2, overflow: "hidden" }}>
                                 <div style={{ height: "100%", width: `${w.avgScore}%`, background: `linear-gradient(90deg, ${sc(w.avgScore)}, ${sc(w.avgScore)}88)`, borderRadius: 2 }} />
                               </div>
                               <span style={{ fontSize: 14, fontWeight: 700, color: sc(w.avgScore), width: 28, textAlign: "right" }}>{w.avgScore}</span>
@@ -249,7 +226,7 @@ export default function Home() {
                   )}
                   {!sessionPlan && <div style={{ flex: 1 }} />}
                   <div style={{ display: "flex", alignItems: "center", gap: 18, flexShrink: 0 }}>
-                    <div style={{ width: 180, height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: 180, height: 4, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${((currentQIndex+(feedback?1:0))/sessionQuestions.length)*100}%`, background: "linear-gradient(90deg, #22d3ee, #818cf8)", transition: "width 0.5s", borderRadius: 3 }} />
                     </div>
                     <span style={{ fontSize: 14, color: T.sec, whiteSpace: "nowrap", fontWeight: 600 }}>{currentQIndex+1} / {sessionQuestions.length}</span>
@@ -264,74 +241,74 @@ export default function Home() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
 
                   {/* Left col */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
                     {/* Question card */}
                     {(currentQuestion || isFollowUp) && (
-                      <div style={{ ...bentoHi, padding: 24 }} className="scale-in">
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                      <div style={{ ...bentoHi, padding: "28px 32px" }} className="scale-in">
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                           {isFollowUp ? <Pill color={T.violet}>Follow-up</Pill> : currentQuestion && (
                             <>
                               <Pill color={currentQuestion.type === "behavioral" ? T.cyan : currentQuestion.type === "technical" ? T.violet : T.warning}>{currentQuestion.type}</Pill>
-                              <span style={{ fontSize: 11, color: T.tert }}>{currentQuestion.category}</span>
+                              <span style={{ fontSize: 12, color: T.tert }}>{currentQuestion.category}</span>
                               {currentQuestion.difficulty && <Pill color={currentQuestion.difficulty === "easy" ? T.success : currentQuestion.difficulty === "medium" ? T.warning : T.danger}>{currentQuestion.difficulty}</Pill>}
                             </>
                           )}
                         </div>
-                        <p style={{ fontSize: 18, fontWeight: 600, color: "white", lineHeight: 1.5, letterSpacing: "-0.01em", margin: "0 0 12px" }}>
+                        <p style={{ fontSize: 22, fontWeight: 600, color: "var(--heading)", lineHeight: 1.5, letterSpacing: "-0.01em", margin: "0 0 14px" }}>
                           {isFollowUp ? followUpQ : currentQuestion?.text}
                         </p>
                         {"delivery_note" in (currentQuestion||{}) && (currentQuestion as AdaptiveQuestion).delivery_note && (
-                          <p style={{ fontSize: 13, color: T.sec, margin: 0, fontStyle: "italic" }}>{(currentQuestion as AdaptiveQuestion).delivery_note}</p>
+                          <p style={{ fontSize: 14, color: T.sec, margin: 0, fontStyle: "italic" }}>{(currentQuestion as AdaptiveQuestion).delivery_note}</p>
                         )}
                       </div>
                     )}
 
                     {/* Hint */}
                     {currentQuestion?.hint && (
-                      <details style={{ ...bento, padding: "12px 16px" } as React.CSSProperties}>
-                        <summary style={{ fontSize: 13, color: T.cyan, cursor: "pointer", fontWeight: 500 }}>💡 Show Hint</summary>
-                        <p style={{ fontSize: 13, color: T.sec, marginTop: 10, lineHeight: 1.55, marginBottom: 0 }}>{currentQuestion.hint}</p>
+                      <details style={{ ...bento, padding: "14px 20px" } as React.CSSProperties}>
+                        <summary style={{ fontSize: 14, color: T.cyan, cursor: "pointer", fontWeight: 500 }}>💡 Show Hint</summary>
+                        <p style={{ fontSize: 14, color: T.sec, marginTop: 12, lineHeight: 1.6, marginBottom: 0 }}>{currentQuestion.hint}</p>
                       </details>
                     )}
 
                     {/* Recorder */}
-                    <div style={{ ...bento, padding: 20 } as React.CSSProperties}>
+                    <div style={{ ...bento, padding: 24 } as React.CSSProperties}>
                       <VoiceRecorder onTranscript={handleTranscript} onRecordingChange={handleRecordingChange} onAudioReady={handleAudioReady} disabled={loading} />
                     </div>
 
                     {/* Answer preview */}
                     {answer && (
-                      <div style={{ ...bento, padding: 18 } as React.CSSProperties} className="fade-in">
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em" }}>Your Answer · {answerDuration}s</span>
+                      <div style={{ ...bento, padding: "22px 24px" } as React.CSSProperties} className="fade-in">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em" }}>Your Answer · {answerDuration}s</span>
                           {audioUrl && (
-                            <button onClick={togglePlayback} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: isPlaying ? "rgba(248,113,113,0.12)" : "rgba(34,211,238,0.12)", border: `1px solid ${isPlaying ? "rgba(248,113,113,0.3)" : "rgba(34,211,238,0.3)"}`, color: isPlaying ? T.danger : T.cyan, cursor: "pointer", fontFamily: "inherit" }}>
+                            <button onClick={togglePlayback} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 999, fontSize: 13, fontWeight: 500, background: isPlaying ? "rgba(248,113,113,0.12)" : "rgba(34,211,238,0.12)", border: `1px solid ${isPlaying ? "rgba(248,113,113,0.3)" : "rgba(34,211,238,0.3)"}`, color: isPlaying ? T.danger : T.cyan, cursor: "pointer", fontFamily: "inherit" }}>
                               {isPlaying ? "⏹ Stop" : "▶ Re-listen"}
                             </button>
                           )}
                         </div>
-                        <p style={{ fontSize: 14, color: T.text, lineHeight: 1.6, maxHeight: 140, overflowY: "auto", whiteSpace: "pre-wrap", margin: 0 }}>{answer}</p>
+                        <p style={{ fontSize: 15, color: T.text, lineHeight: 1.65, maxHeight: 160, overflowY: "auto", whiteSpace: "pre-wrap", margin: 0 }}>{answer}</p>
 
                         {/* Action buttons */}
-                        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                        <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
                           {showFeedbackPerQ && (
                             <button onClick={getFeedback} disabled={loading}
-                              style={{ flex: 1, padding: "12px", borderRadius: 12, background: loading ? "rgba(34,211,238,0.3)" : "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 14, fontWeight: 600, border: "none", cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                              {loading ? (<><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />Analysing...</>) : "Get AI Feedback"}
+                              style={{ flex: 1, padding: "14px", borderRadius: 14, background: loading ? "rgba(34,211,238,0.3)" : "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 15, fontWeight: 600, border: "none", cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                              {loading ? (<><span style={{ width: 15, height: 15, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />Analysing...</>) : "Get AI Feedback"}
                             </button>
                           )}
                           {!showFeedbackPerQ && (
                             <button onClick={() => { const r: AnswerRecord = { id: "ans_"+Date.now(), sessionId, questionId: currentQuestion?.id||"", questionText: currentQuestion?.text||"", category: currentQuestion?.category||"", type: currentQuestion?.type||"", answer, feedback: { overall_score:0, star_scores:{situation:0,task:0,action:0,result:0}, dimension_scores:{clarity:0,confidence:0,conciseness:0,storytelling:0,technical_accuracy:0}, sentence_analysis:[], delivery_analysis:{filler_words:[],hedging_phrases:[],power_words:[],active_voice_pct:0,pacing:"good",pacing_note:""}, strengths:[], improvements:[], coaching_tip:"", weakest_sentence_rewrite:{original:"",improved:""}, follow_up_question:"", ideal_90sec_structure:"", weak_areas:[], recommendation:"", encouragement:"" }, durationSec: answerDuration||60, timestamp: new Date().toISOString() }; setSessionAnswers(prev=>[...prev,r]); nextQuestion(); }}
-                              style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "white", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+                              style={{ flex: 1, padding: "14px", borderRadius: 14, background: "var(--surface-hi)", border: "1px solid var(--border)", color: "var(--text)", fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
                               Save & Next →
                             </button>
                           )}
                           {feedback && currentQIndex < sessionQuestions.length-1 && (
-                            <button onClick={nextQuestion} style={{ padding: "12px 22px", borderRadius: 12, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)", color: T.success, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
+                            <button onClick={nextQuestion} style={{ padding: "14px 24px", borderRadius: 14, background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)", color: T.success, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Next →</button>
                           )}
                           {feedback && currentQIndex === sessionQuestions.length-1 && (
-                            <button onClick={endSession} disabled={summaryLoading} style={{ padding: "12px 22px", borderRadius: 12, background: "rgba(129,140,248,0.12)", border: "1px solid rgba(129,140,248,0.25)", color: T.violet, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+                            <button onClick={endSession} disabled={summaryLoading} style={{ padding: "14px 24px", borderRadius: 14, background: "rgba(129,140,248,0.12)", border: "1px solid rgba(129,140,248,0.25)", color: T.violet, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
                               {summaryLoading ? "Generating..." : "Finish Session"}
                             </button>
                           )}
@@ -341,46 +318,45 @@ export default function Home() {
                   </div>
 
                   {/* Right sidebar — live stats bento */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {/* Questions left */}
-                    <div style={{ ...bento, padding: 18, textAlign: "center" } as React.CSSProperties}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Progress</div>
-                      <div style={{ fontSize: 42, fontWeight: 800, color: T.cyan, letterSpacing: "-0.04em", lineHeight: 1 }}>{currentQIndex+1}<span style={{ fontSize: 18, color: T.tert }}>/{sessionQuestions.length}</span></div>
-                      <div style={{ fontSize: 12, color: T.tert, marginTop: 4 }}>questions</div>
-                    </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                    {/* Session avg score */}
-                    {sessionAnswers.filter(a => a.feedback.overall_score > 0).length > 0 && (() => {
-                      const scored = sessionAnswers.filter(a => a.feedback.overall_score > 0);
-                      const avg = Math.round(scored.reduce((s,a)=>s+a.feedback.overall_score,0)/scored.length);
-                      return (
-                        <div style={{ ...bento, padding: 18, textAlign: "center" } as React.CSSProperties}>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Session Avg</div>
-                          <div style={{ fontSize: 42, fontWeight: 800, color: sc(avg), letterSpacing: "-0.04em", lineHeight: 1 }}>{avg}</div>
-                          <div style={{ height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden", marginTop: 10 }}><div style={{ height: "100%", width: `${avg}%`, background: `linear-gradient(90deg, ${sc(avg)}, ${sc(avg)}88)`, borderRadius: 2 }} /></div>
-                        </div>
-                      );
-                    })()}
+                    {/* Progress + avg score side by side */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div style={{ ...bento, padding: "20px 16px", textAlign: "center" } as React.CSSProperties}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Question</div>
+                        <div style={{ fontSize: 48, fontWeight: 800, color: T.cyan, letterSpacing: "-0.04em", lineHeight: 1 }}>{currentQIndex+1}<span style={{ fontSize: 20, color: T.tert }}>/{sessionQuestions.length}</span></div>
+                      </div>
+                      {sessionAnswers.filter(a => a.feedback.overall_score > 0).length > 0 && (() => {
+                        const scored = sessionAnswers.filter(a => a.feedback.overall_score > 0);
+                        const avg = Math.round(scored.reduce((s,a)=>s+a.feedback.overall_score,0)/scored.length);
+                        return (
+                          <div style={{ ...bento, padding: "20px 16px", textAlign: "center" } as React.CSSProperties}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Avg Score</div>
+                            <div style={{ fontSize: 48, fontWeight: 800, color: sc(avg), letterSpacing: "-0.04em", lineHeight: 1 }}>{avg}</div>
+                          </div>
+                        );
+                      })()}
+                    </div>
 
                     {/* Last score breakdown */}
                     {feedback && (
-                      <div style={{ ...bentoVi, padding: 18 } as React.CSSProperties}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: T.violet, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>Latest STAR</div>
+                      <div style={{ ...bentoVi, padding: "22px 24px" } as React.CSSProperties}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.violet, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 16 }}>Latest STAR</div>
                         {Object.entries(feedback.star_scores||{}).map(([k,v]) => (
-                          <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                            <span style={{ fontSize: 11, color: T.sec, width: 58, textTransform: "capitalize" }}>{k}</span>
-                            <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", width: `${v}%`, background: sc(v as number), borderRadius: 2 }} /></div>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: sc(v as number), width: 22, textAlign: "right" }}>{v as number}</span>
+                          <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, color: T.sec, width: 70, textTransform: "capitalize" }}>{k}</span>
+                            <div style={{ flex: 1, height: 4, background: "var(--surface-hi)", borderRadius: 2, overflow: "hidden" }}><div style={{ height: "100%", width: `${v}%`, background: sc(v as number), borderRadius: 2 }} /></div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: sc(v as number), width: 26, textAlign: "right" }}>{v as number}</span>
                           </div>
                         ))}
                       </div>
                     )}
 
                     {/* Target company */}
-                    <div style={{ ...bento, padding: 16 } as React.CSSProperties}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Targeting</div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.targetCompany}</div>
-                      <div style={{ fontSize: 12, color: T.sec, marginTop: 2 }}>{profile.targetRole}</div>
+                    <div style={{ ...bento, padding: "20px 24px" } as React.CSSProperties}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: T.tert, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Targeting</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--heading)" }}>{profile.targetCompany}</div>
+                      <div style={{ fontSize: 14, color: T.sec, marginTop: 4 }}>{profile.targetRole}</div>
                     </div>
                   </div>
                 </div>
@@ -433,7 +409,7 @@ export default function Home() {
 /* ── SESSION SUMMARY BENTO ── */
 function SessionSummaryView({ summary, answers, onNewSession }: { summary: Record<string,unknown>; answers: AnswerRecord[]; onNewSession: ()=>void }) {
   const s = summary as { session_score:number; readiness_rating:number; readiness_label:string; overall_assessment:string; encouragement:string; pattern_analysis:{recurring_strengths:string[];recurring_weaknesses:string[];communication_habits:{filler_summary:string;hedging_summary:string;ownership_language:string;pacing_summary:string}}; star_breakdown:{strongest:string;weakest:string;advice:string}; top_3_priorities:Array<{area:string;why:string;how:string}>; superpower:string; company_specific_tips:string[] };
-  const b = { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:20, padding:22 };
+  const b = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:20, padding:22 };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="fade-in">
@@ -472,7 +448,7 @@ function SessionSummaryView({ summary, answers, onNewSession }: { summary: Recor
         <div style={{ fontSize:11, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:14 }}>Question Scores</div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(180px, 1fr))", gap:10 }}>
           {answers.map((a,i) => (
-            <div key={i} style={{ padding:14, background:"rgba(255,255,255,0.03)", borderRadius:14, display:"flex", flexDirection:"column", gap:6 }}>
+            <div key={i} style={{ padding:14, background:"var(--surface)", borderRadius:14, display:"flex", flexDirection:"column", gap:6 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:34, height:34, borderRadius:"50%", background:`${sc(a.feedback.overall_score)}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:sc(a.feedback.overall_score), flexShrink:0 }}>{a.feedback.overall_score||"—"}</div>
                 <span style={{ fontSize:12, color:T.sec, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Q{i+1}</span>
@@ -503,8 +479,8 @@ function SessionSummaryView({ summary, answers, onNewSession }: { summary: Recor
             <div style={{ ...b }}>
               <div style={{ fontSize:11, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>STAR Pattern</div>
               <div style={{ display:"flex", gap:10, marginBottom:10 }}>
-                <div style={{ flex:1, padding:12, background:`${T.success}0D`, borderRadius:10, textAlign:"center" }}><div style={{ fontSize:10, color:T.success, fontWeight:600, marginBottom:4 }}>STRONGEST</div><div style={{ fontSize:14, fontWeight:700, color:"white", textTransform:"capitalize" }}>{s.star_breakdown.strongest}</div></div>
-                <div style={{ flex:1, padding:12, background:`${T.danger}0D`, borderRadius:10, textAlign:"center" }}><div style={{ fontSize:10, color:T.danger, fontWeight:600, marginBottom:4 }}>WEAKEST</div><div style={{ fontSize:14, fontWeight:700, color:"white", textTransform:"capitalize" }}>{s.star_breakdown.weakest}</div></div>
+                <div style={{ flex:1, padding:12, background:`${T.success}0D`, borderRadius:10, textAlign:"center" }}><div style={{ fontSize:10, color:T.success, fontWeight:600, marginBottom:4 }}>STRONGEST</div><div style={{ fontSize:14, fontWeight:700, color:"var(--heading)", textTransform:"capitalize" }}>{s.star_breakdown.strongest}</div></div>
+                <div style={{ flex:1, padding:12, background:`${T.danger}0D`, borderRadius:10, textAlign:"center" }}><div style={{ fontSize:10, color:T.danger, fontWeight:600, marginBottom:4 }}>WEAKEST</div><div style={{ fontSize:14, fontWeight:700, color:"var(--heading)", textTransform:"capitalize" }}>{s.star_breakdown.weakest}</div></div>
               </div>
               <p style={{ fontSize:12, color:T.sec, margin:0, lineHeight:1.5 }}>{s.star_breakdown.advice}</p>
             </div>
@@ -524,10 +500,10 @@ function SessionSummaryView({ summary, answers, onNewSession }: { summary: Recor
           <div style={{ fontSize:11, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:14 }}>Next Session Priorities</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
             {s.top_3_priorities.map((p,i) => (
-              <div key={i} style={{ padding:16, background:"rgba(255,255,255,0.03)", borderRadius:14 }}>
+              <div key={i} style={{ padding:16, background:"var(--surface)", borderRadius:14 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                   <div style={{ width:22, height:22, borderRadius:"50%", background:`linear-gradient(135deg, #22d3ee, #818cf8)`, color:"white", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>{i+1}</div>
-                  <span style={{ fontSize:13, fontWeight:600, color:"white" }}>{p.area}</span>
+                  <span style={{ fontSize:13, fontWeight:600, color:"var(--heading)" }}>{p.area}</span>
                 </div>
                 <p style={{ fontSize:12, color:T.sec, margin:"0 0 6px", lineHeight:1.4 }}>{p.why}</p>
                 <p style={{ fontSize:12, color:T.cyan, margin:0, lineHeight:1.4 }}>{p.how}</p>
@@ -549,7 +525,7 @@ function HistoryView() {
   const [profile, setProfile] = useState(getProfile());
   const [expandedAnswer, setExpandedAnswer] = useState<string|null>(null);
   useEffect(() => { setProfile(getProfile()); }, []);
-  const b = { background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:18 };
+  const b = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:18 };
 
   if (profile.answers.length === 0) return (
     <div style={{ textAlign:"center", padding:"80px 0" }}>
@@ -564,7 +540,7 @@ function HistoryView() {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="fade-in">
-      <h2 style={{ fontSize:24, fontWeight:700, color:"white", letterSpacing:"-0.02em", margin:"0 0 8px" }}>Practice History</h2>
+      <h2 style={{ fontSize:24, fontWeight:700, color:"var(--heading)", letterSpacing:"-0.02em", margin:"0 0 8px" }}>Practice History</h2>
       {Array.from(sessionMap.entries()).map(([sessId,answers]) => {
         const session = profile.sessions.find(s=>s.id===sessId);
         const scored = answers.filter(a=>a.feedback.overall_score>0);
@@ -578,11 +554,11 @@ function HistoryView() {
               </div>
               {avg>0 && <span style={{ fontSize:14, fontWeight:800, color:sc(avg), background:`${sc(avg)}18`, padding:"4px 14px", borderRadius:999 }}>{avg}</span>}
             </summary>
-            <div style={{ borderTop:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ borderTop:"1px solid var(--divider)" }}>
               {answers.map(a => {
                 const isExp = expandedAnswer===a.id; const fb = a.feedback;
                 return (
-                  <div key={a.id} style={{ borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                  <div key={a.id} style={{ borderBottom:"1px solid var(--divider)" }}>
                     <button onClick={()=>setExpandedAnswer(isExp?null:a.id)}
                       style={{ width:"100%", padding:"14px 22px", textAlign:"left", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12 }}>
                       {fb.overall_score>0 && <div style={{ width:34, height:34, borderRadius:"50%", background:`${sc(fb.overall_score)}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:sc(fb.overall_score), flexShrink:0 }}>{fb.overall_score}</div>}
@@ -595,17 +571,17 @@ function HistoryView() {
                     {isExp && (
                       <div style={{ padding:"0 22px 22px", display:"flex", flexDirection:"column", gap:10 }}>
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                          <div style={{ padding:14, background:"rgba(255,255,255,0.03)", borderRadius:14 }}>
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.cyan, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Question</div>
                             <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{a.questionText}</p>
                           </div>
-                          <div style={{ padding:14, background:"rgba(255,255,255,0.03)", borderRadius:14 }}>
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.violet, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Your Answer · {a.durationSec}s</div>
                             <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5, maxHeight:80, overflowY:"auto", whiteSpace:"pre-wrap" }}>{a.answer}</p>
                           </div>
                         </div>
                         {fb.star_scores && (
-                          <div style={{ padding:14, background:"rgba(255,255,255,0.03)", borderRadius:14 }}>
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>STAR</div>
                             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
                               {Object.entries(fb.star_scores).map(([k,v]) => <div key={k} style={{ textAlign:"center" }}><div style={{ fontSize:22, fontWeight:800, color:sc(v as number) }}>{v as number}</div><div style={{ fontSize:10, color:T.tert, textTransform:"capitalize", marginTop:2 }}>{k}</div></div>)}
@@ -613,12 +589,12 @@ function HistoryView() {
                           </div>
                         )}
                         {fb.dimension_scores && (
-                          <div style={{ padding:14, background:"rgba(255,255,255,0.03)", borderRadius:14 }}>
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Dimensions</div>
                             {Object.entries(fb.dimension_scores).map(([k,v]) => (
                               <div key={k} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                                 <span style={{ fontSize:12, color:T.sec, width:120, textTransform:"capitalize" }}>{k.replace(/_/g," ")}</span>
-                                <div style={{ flex:1, height:3, background:"rgba(255,255,255,0.07)", borderRadius:2, overflow:"hidden" }}><div style={{ height:"100%", width:`${v}%`, background:sc(v as number), borderRadius:2 }} /></div>
+                                <div style={{ flex:1, height:3, background:"var(--surface-hi)", borderRadius:2, overflow:"hidden" }}><div style={{ height:"100%", width:`${v}%`, background:sc(v as number), borderRadius:2 }} /></div>
                                 <span style={{ fontSize:12, fontWeight:700, color:sc(v as number), width:24, textAlign:"right" }}>{v as number}</span>
                               </div>
                             ))}
