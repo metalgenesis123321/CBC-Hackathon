@@ -13,27 +13,24 @@ Existing interview prep platforms rely on static questions, lack adaptability to
 **Specifically:**
 
 - **No follow-up questions** — Real interviewers probe deeper based on what you said. Every existing tool just moves to the next unrelated question.
-- **No way to ask about your feedback** — You get a score and a wall of text. You can't ask "why was my Result section weak?" or "can you rewrite that sentence for me?" There's no conversation.
+- **No way to ask about your feedback** — You get a score and a wall of text. You can't ask "why was my Result section weak?" There's no conversation.
 - **No replay** — You can't re-listen to what you actually said. You forget your mistakes within minutes.
 - **Static question banks** — The same generic questions regardless of your company, role, or weak areas. Nothing adapts.
-- **Interview coaching costs $200–500/session** — 73% of candidates get zero structured feedback before their real interview. First-gen students, career changers, and non-native speakers are hit the hardest.
+- **No adaptive difficulty or presentation** — Questions don't get harder as you improve, and feedback is dumped as a wall of text instead of being spoken, highlighted, and interactive.
+- **Interview coaching costs $200–500/session** — First-gen students, career changers, and non-native speakers are hit the hardest.
 
-**We built InterviewCoach AI to solve all of this:** a free, voice-first mock interview platform where an AI interviewer sits across from you in a 3D office, asks real company-specific questions, generates follow-up questions based on *your specific answer* (just like a real interviewer), scores your STAR structure sentence-by-sentence, speaks personalized feedback out loud, and lets you ask questions about your score — all in real time. Our team combined five sponsor APIs into a dual-model architecture where Gemini analyzes and Claude coaches, creating the first interview prep tool that gives you **feedback on the feedback**.
+**We built InterviewCoach AI to solve all of this:** a free, voice-first mock interview platform where an AI interviewer sits across from you in a 3D office, asks real company-specific questions, generates adaptive follow-ups, scores your STAR structure sentence-by-sentence, speaks personalized feedback out loud, and lets you ask questions about your score — all in real time. The first interview prep tool that gives you **feedback on the feedback**.
 
 ---
 
 ## What Makes This Different
 
-**We checked every interview prep platform out there — none of them give you feedback on the feedback.**
+**We checked every interview prep platform — none of them give you feedback on the feedback.**
 
-Every existing tool (Pramp, Interviewing.io, ChatGPT prompts) gives you a score and a list of bullet points. That's where it ends. You're left wondering: *"Why did I score low on Action? What exactly should I change? How do I fix it?"*
-
-**We built something that doesn't exist yet:**
-
-- **Real-time spoken feedback** — Our AI interviewer doesn't just score you. It *talks* to you, explains what went wrong, and highlights words as it speaks — like a real debrief after an interview.
-- **Feedback on the feedback** — After receiving your score, you can *ask questions about the feedback* by voice or text. "Why was my Result section weak?" → Claude explains, gives a rewrite, and creates a coaching plan. No other platform does this.
-- **Adaptive follow-up questions** — Our AI generates follow-up questions *based on what you just said*, just like a real interviewer probing deeper. Not random questions from a bank.
-- **3D interview experience** — Two characters sitting at a table, gesturing, speaking, reacting. Nobody else has this. It's not a chatbox — it's an experience.
+- **Real-time spoken feedback** — Our AI interviewer *talks* to you, explains what went wrong, and highlights words as it speaks — like a real debrief after an interview.
+- **Feedback on the feedback** — Ask questions about your score by voice or text. "Why was my Result weak?" → Claude explains, gives a rewrite, and creates a coaching plan.
+- **Adaptive questions & presentation** — Follow-ups based on *what you just said*, difficulty that scales with your progress, and feedback delivered interactively — not dumped as a wall of text.
+- **3D interview experience** — Two characters sitting at a table, gesturing, speaking, reacting. It's not a chatbox — it's an experience.
 
 ---
 
@@ -41,9 +38,8 @@ Every existing tool (Pramp, Interviewing.io, ChatGPT prompts) gives you a score 
 
 | Sponsor | What We Built With It | Why It's Core |
 |---|---|---|
-| **Anthropic Claude Haiku** | The "interviewer brain" — generates spoken feedback in-character as a senior interviewer, creates follow-up questions based on your specific answer, powers the "ask about feedback" voice/text Q&A, writes personalized coaching plans with example rewrites | Without Claude, the feedback would be robotic bullet points. Claude makes it feel like talking to a real interviewer who cares about your growth. |
-| **InsForge** | AI Model Gateway (routes both Gemini and Claude through a single endpoint), PostgreSQL database (users, sessions, answers, weak areas, progress), pgvector for semantic question matching | InsForge is our entire backend — every API call, every saved answer, every progress data point flows through it. |
-| **Google Gemini 2.5 Flash** | The "analyst" — STAR framework scoring, sentence-by-sentence analysis, delivery metrics (filler words, pacing, active voice), resume PDF parsing via multimodal API, research synthesis, question generation | Gemini handles the heavy structured analysis that feeds into Claude's humanized feedback. |
+| **Anthropic Claude Haiku** | The "interviewer brain" — generates spoken feedback as a senior interviewer, creates follow-up questions based on your specific answer, powers the "ask about feedback" voice/text Q&A, writes personalized coaching plans with example rewrites | Without Claude, the feedback would be robotic bullet points. Claude makes it feel like talking to a real interviewer who cares about your growth. |
+| **InsForge** | AI Model Gateway (routes all models through a single endpoint), PostgreSQL database (users, sessions, answers, weak areas, progress), pgvector for semantic question matching | InsForge is our entire backend — every API call, every saved answer, every progress data point flows through it. |
 | **TinyFish** | AI browser automation that scrapes real interview experiences from Reddit, LeetCode, Glassdoor, GeeksForGeeks, and IGotAnOffer | Our questions aren't generic — they're based on what real candidates were actually asked at each company this year. |
 | **Speechmatics** | Real-time speech-to-text transcription during the interview — candidate speaks, words appear live | Voice-first design. Typing interview answers doesn't prepare you for speaking them out loud. |
 
@@ -196,8 +192,7 @@ All Claude calls include an `interviewerPersona` system prompt — a senior inte
 > See [How We Used Each Sponsor](#how-we-used-each-sponsor) at the top for the full breakdown.
 
 - **Anthropic Claude Haiku** — Interviewer persona: spoken feedback, follow-up questions, ask-about-feedback Q&A, coaching plans, adaptive questions
-- **InsForge** — PostgreSQL database, AI Model Gateway (routes both Gemini and Claude Haiku), vector database (pgvector)
-- **Google Gemini 2.5 Flash** — STAR analysis, sentence scoring, delivery metrics, resume parsing, question generation, research synthesis
+- **InsForge** — PostgreSQL database, AI Model Gateway, vector database (pgvector)
 - **TinyFish** — AI browser automation for scraping real interview data from 5 sources (Reddit, LeetCode, Glassdoor, GeeksForGeeks, IGotAnOffer)
 - **Speechmatics** — Real-time speech-to-text transcription for voice-first interview experience
 
