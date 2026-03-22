@@ -149,56 +149,76 @@ export default function Home() {
             {sessionQuestions.length === 0 && !generatingSession && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }} className="stagger">
 
-                {/* Hero tile */}
-                <div style={{ ...bentoHi, padding: "36px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 40 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: T.cyan, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Ready to practise</div>
-                    <h2 style={{ fontSize: 34, fontWeight: 800, color: "var(--heading)", letterSpacing: "-0.03em", margin: "0 0 10px" }}>
-                      {profile.targetCompany} · {profile.targetRole}
-                    </h2>
-                    <p style={{ fontSize: 16, color: T.sec, margin: "0 0 28px", lineHeight: 1.6, maxWidth: 560 }}>5 questions per session. Get scored after each answer or save all feedback for the end of the session.</p>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                      <button onClick={() => startSession(false)} style={{ padding: "14px 28px", borderRadius: 14, background: "var(--surface-hi)", border: "1px solid var(--border-hi)", color: "var(--text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Standard Session</button>
-                      <button onClick={() => startSession(true)} style={{ padding: "14px 28px", borderRadius: 14, background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                        {getWeakAreas().length > 0 ? "Adaptive Session ✦" : "AI-Generated Session"}
-                      </button>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: T.sec, cursor: "pointer" }}>
-                        <input type="checkbox" checked={showFeedbackPerQ} onChange={e => setShowFeedbackPerQ(e.target.checked)} style={{ accentColor: T.cyan, width: 15, height: 15 }} />
-                        Feedback per question
-                      </label>
-                    </div>
+                {/* Hero tile — centred */}
+                <div style={{ ...bentoHi, padding: "48px 40px", textAlign: "center" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.cyan, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Ready to practise</div>
+                  <h2 style={{ fontSize: 34, fontWeight: 800, color: "var(--heading)", letterSpacing: "-0.03em", margin: "0 0 10px" }}>
+                    {profile.targetCompany} · {profile.targetRole}
+                  </h2>
+                  <p style={{ fontSize: 16, color: T.sec, margin: "0 auto 28px", lineHeight: 1.6, maxWidth: 560 }}>5 questions per session. Get scored after each answer or save all feedback for the end of the session.</p>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+                    <button onClick={() => startSession(false)} style={{ padding: "14px 28px", borderRadius: 14, background: "var(--surface-hi)", border: "1px solid var(--border-hi)", color: "var(--text)", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Standard Session</button>
+                    <button onClick={() => startSession(true)} style={{ padding: "14px 28px", borderRadius: 14, background: "linear-gradient(135deg, #22d3ee, #818cf8)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                      {getWeakAreas().length > 0 ? "Adaptive Session ✦" : "AI-Generated Session"}
+                    </button>
                   </div>
-                  <div style={{ fontSize: 80, opacity: 0.12, flexShrink: 0 }}>🎯</div>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: T.sec, cursor: "pointer", marginTop: 16 }}>
+                    <input type="checkbox" checked={showFeedbackPerQ} onChange={e => setShowFeedbackPerQ(e.target.checked)} style={{ accentColor: T.cyan, width: 15, height: 15 }} />
+                    Feedback per question
+                  </label>
                 </div>
 
-                {/* Bottom row: company intel + weak areas */}
-                {(companyPattern.name !== "General" || getWeakAreas().length > 0) && (
+                {/* Company intel — grouped layout */}
+                {companyPattern.name !== "General" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    {companyPattern.name !== "General" && (
-                      <div style={{ ...bento, padding: "28px 32px" }} className="fade-in">
-                        <div style={{ fontSize: 12, fontWeight: 600, color: T.violet, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>{companyPattern.name} Intel</div>
-                        <p style={{ fontSize: 15, color: T.sec, lineHeight: 1.65, margin: "0 0 16px" }}>{companyPattern.interviewStyle.substring(0, 200)}</p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          {companyPattern.whatTheyLookFor.slice(0, 4).map((w, i) => <Pill key={i} color={T.violet}>{w}</Pill>)}
-                        </div>
+                    {/* Left: title + interview style */}
+                    <div style={{ ...bento, padding: "28px 32px" }} className="fade-in">
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>{companyPattern.name} Interview Intel</div>
+                      <p style={{ fontSize: 14, color: T.sec, lineHeight: 1.65, margin: 0 }}>{companyPattern.interviewStyle}</p>
+                    </div>
+
+                    {/* Right: key factors grid */}
+                    <div style={{ ...bento, padding: "28px 32px" }} className="fade-in">
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.cyan, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>What They Look For</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {companyPattern.whatTheyLookFor.map((w, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 12, background: `${T.violet}10`, border: `1px solid ${T.violet}20` }}>
+                            <span style={{ fontSize: 14 }}>{["🎯", "🧩", "💡", "⚡", "🔍"][i % 5]}</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{w}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                    {getWeakAreas().length > 0 && (
-                      <div style={{ ...bento, padding: "28px 32px" }} className="fade-in">
-                        <div style={{ fontSize: 12, fontWeight: 600, color: T.warning, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Areas to Improve</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                          {getWeakAreas().slice(0, 4).map(w => (
-                            <div key={w.area} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              <span style={{ fontSize: 14, color: T.text, flex: 1 }}>{WEAK_AREA_LABELS[w.area] || w.area}</span>
-                              <div style={{ width: 100, height: 4, background: "var(--surface-hi)", borderRadius: 2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${w.avgScore}%`, background: `linear-gradient(90deg, ${sc(w.avgScore)}, ${sc(w.avgScore)}88)`, borderRadius: 2 }} />
-                              </div>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: sc(w.avgScore), width: 28, textAlign: "right" }}>{w.avgScore}</span>
-                            </div>
-                          ))}
-                        </div>
+                    </div>
+
+                    {/* Bottom full-width: tips */}
+                    <div style={{ ...bentoVi, padding: "24px 32px", gridColumn: "1 / -1" }} className="fade-in">
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.violet, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Tips from Candidates</div>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(companyPattern.tips.length, 4)}, 1fr)`, gap: 12 }}>
+                        {companyPattern.tips.slice(0, 4).map((tip, i) => (
+                          <div key={i} style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(129,140,248,0.06)", border: "1px solid rgba(129,140,248,0.12)" }}>
+                            <p style={{ fontSize: 13, color: T.text, lineHeight: 1.5, margin: 0 }}>{tip}</p>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Weak areas */}
+                {getWeakAreas().length > 0 && (
+                  <div style={{ ...bento, padding: "28px 32px" }} className="fade-in">
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.warning, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>Areas to Improve</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      {getWeakAreas().slice(0, 4).map(w => (
+                        <div key={w.area} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontSize: 14, color: T.text, flex: 1 }}>{WEAK_AREA_LABELS[w.area] || w.area}</span>
+                          <div style={{ width: 100, height: 4, background: "var(--surface-hi)", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${w.avgScore}%`, background: `linear-gradient(90deg, ${sc(w.avgScore)}, ${sc(w.avgScore)}88)`, borderRadius: 2 }} />
+                          </div>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: sc(w.avgScore), width: 28, textAlign: "right" }}>{w.avgScore}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -513,6 +533,21 @@ function SessionSummaryView({ summary, answers, onNewSession }: { summary: Recor
         </div>
       )}
 
+      {/* Company-specific tips */}
+      {s.company_specific_tips?.length > 0 && (
+        <div style={{ ...b }}>
+          <div style={{ fontSize:11, fontWeight:600, color:T.violet, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:14 }}>Company-Specific Tips</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {s.company_specific_tips.map((tip,i) => (
+              <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                <span style={{ color:T.cyan, fontSize:14, flexShrink:0, marginTop:1 }}>→</span>
+                <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{tip}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <button onClick={onNewSession} style={{ width:"100%", padding:16, borderRadius:16, background:"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:15, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", letterSpacing:"-0.01em" }}>
         Start New Session
       </button>
@@ -527,7 +562,7 @@ function HistoryView() {
   useEffect(() => { setProfile(getProfile()); }, []);
   const b = { background:"var(--surface)", border:"1px solid var(--border)", borderRadius:18 };
 
-  if (profile.answers.length === 0) return (
+  if (!profile || !profile.answers || profile.answers.length === 0) return (
     <div style={{ textAlign:"center", padding:"80px 0" }}>
       <div style={{ fontSize:48, marginBottom:16 }}>🕐</div>
       <h3 style={{ fontSize:22, fontWeight:700, color:"white", letterSpacing:"-0.02em", marginBottom:8 }}>No history yet</h3>
@@ -535,78 +570,196 @@ function HistoryView() {
     </div>
   );
 
+  // Group by session — safely handle missing sessionId
   const sessionMap = new Map<string,AnswerRecord[]>();
-  for (const a of profile.answers) { if (!sessionMap.has(a.sessionId)) sessionMap.set(a.sessionId,[]); sessionMap.get(a.sessionId)!.push(a); }
+  for (const a of profile.answers) { const sid = a.sessionId || "unknown"; if (!sessionMap.has(sid)) sessionMap.set(sid,[]); sessionMap.get(sid)!.push(a); }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="fade-in">
       <h2 style={{ fontSize:24, fontWeight:700, color:"var(--heading)", letterSpacing:"-0.02em", margin:"0 0 8px" }}>Practice History</h2>
       {Array.from(sessionMap.entries()).map(([sessId,answers]) => {
-        const session = profile.sessions.find(s=>s.id===sessId);
-        const scored = answers.filter(a=>a.feedback.overall_score>0);
-        const avg = scored.length>0 ? Math.round(scored.reduce((s,a)=>s+a.feedback.overall_score,0)/scored.length) : 0;
+        const session = (profile.sessions || []).find(s=>s.id===sessId);
+        const scored = answers.filter(a=>a.feedback?.overall_score > 0);
+        const avg = scored.length>0 ? Math.round(scored.reduce((s,a)=>s+(a.feedback?.overall_score||0),0)/scored.length) : 0;
         return (
           <details key={sessId} style={{ ...b, overflow:"hidden" }}>
             <summary style={{ padding:"18px 22px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
-                <span style={{ fontSize:15, fontWeight:600, color:"white" }}>{session?.company||"Practice"} — {session?.role||""}</span>
-                <span style={{ fontSize:13, color:T.sec, marginLeft:10 }}>{new Date(answers[0].timestamp).toLocaleDateString()} · {answers.length} questions</span>
+                <span style={{ fontSize:15, fontWeight:600, color:"white" }}>{session?.company||"Practice"}{session?.role ? ` — ${session.role}` : ""}</span>
+                <span style={{ fontSize:13, color:T.sec, marginLeft:10 }}>{answers[0]?.timestamp ? new Date(answers[0].timestamp).toLocaleDateString() : "—"} · {answers.length} Qs</span>
               </div>
-              {avg>0 && <span style={{ fontSize:14, fontWeight:800, color:sc(avg), background:`${sc(avg)}18`, padding:"4px 14px", borderRadius:999 }}>{avg}</span>}
+              {avg>0 && <span style={{ fontSize:14, fontWeight:800, color:sc(avg), background:`${sc(avg)}18`, padding:"4px 14px", borderRadius:999 }}>{avg} avg</span>}
             </summary>
-            <div style={{ borderTop:"1px solid var(--divider)" }}>
+            <div style={{ borderTop:"1px solid var(--border)" }}>
               {answers.map(a => {
-                const isExp = expandedAnswer===a.id; const fb = a.feedback;
+                const isExp = expandedAnswer===a.id;
+                const fb = a.feedback;
+                if (!fb) return (
+                  <div key={a.id} style={{ padding:"14px 22px", borderBottom:"1px solid var(--border)" }}>
+                    <p style={{ fontSize:13, color:T.sec, margin:0 }}>{a.questionText || "Unknown question"}</p>
+                    <p style={{ fontSize:12, color:T.tert, margin:"4px 0 0" }}>No feedback data available</p>
+                  </div>
+                );
                 return (
-                  <div key={a.id} style={{ borderBottom:"1px solid var(--divider)" }}>
+                  <div key={a.id} style={{ borderBottom:"1px solid var(--border)" }}>
                     <button onClick={()=>setExpandedAnswer(isExp?null:a.id)}
                       style={{ width:"100%", padding:"14px 22px", textAlign:"left", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12 }}>
-                      {fb.overall_score>0 && <div style={{ width:34, height:34, borderRadius:"50%", background:`${sc(fb.overall_score)}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:sc(fb.overall_score), flexShrink:0 }}>{fb.overall_score}</div>}
+                      {(fb.overall_score||0)>0 && <div style={{ width:34, height:34, borderRadius:"50%", background:`${sc(fb.overall_score)}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:sc(fb.overall_score), flexShrink:0 }}>{fb.overall_score}</div>}
                       <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ fontSize:14, color:T.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.questionText}</p>
-                        <p style={{ fontSize:12, color:T.tert, margin:"2px 0 0" }}>{a.type} · {a.durationSec}s</p>
+                        <p style={{ fontSize:14, color:T.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.questionText || "Question"}</p>
+                        <div style={{ display:"flex", gap:8, marginTop:2 }}>
+                          {a.type && <span style={{ fontSize:12, color:T.tert }}>{a.type}</span>}
+                          {a.durationSec > 0 && <span style={{ fontSize:12, color:T.tert }}>{a.durationSec}s</span>}
+                        </div>
                       </div>
-                      <span style={{ color:T.tert, fontSize:12 }}>{isExp?"▲":"▼"}</span>
+                      <span style={{ color:T.tert, fontSize:12, transition:"transform 0.2s", transform:isExp?"rotate(180deg)":"none" }}>▼</span>
                     </button>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {isExp && (
                       <div style={{ padding:"0 22px 22px", display:"flex", flexDirection:"column", gap:10 }}>
+                        {/* Question + Answer */}
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                           <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.cyan, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Question</div>
-                            <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{a.questionText}</p>
+                            <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{a.questionText || "—"}</p>
                           </div>
-                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
-                            <div style={{ fontSize:10, fontWeight:600, color:T.violet, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Your Answer · {a.durationSec}s</div>
-                            <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5, maxHeight:80, overflowY:"auto", whiteSpace:"pre-wrap" }}>{a.answer}</p>
-                          </div>
+                          {a.answer && (
+                            <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
+                              <div style={{ fontSize:10, fontWeight:600, color:T.violet, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Your Answer · {a.durationSec||0}s</div>
+                              <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5, maxHeight:100, overflowY:"auto", whiteSpace:"pre-wrap" }}>{a.answer}</p>
+                            </div>
+                          )}
                         </div>
-                        {fb.star_scores && (
+
+                        {/* STAR Scores */}
+                        {fb.star_scores && typeof fb.star_scores === "object" && Object.keys(fb.star_scores).length > 0 && (
                           <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
-                            <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>STAR</div>
+                            <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>STAR Scores</div>
                             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
                               {Object.entries(fb.star_scores).map(([k,v]) => <div key={k} style={{ textAlign:"center" }}><div style={{ fontSize:22, fontWeight:800, color:sc(v as number) }}>{v as number}</div><div style={{ fontSize:10, color:T.tert, textTransform:"capitalize", marginTop:2 }}>{k}</div></div>)}
                             </div>
                           </div>
                         )}
-                        {fb.dimension_scores && (
+
+                        {/* Dimension Scores */}
+                        {fb.dimension_scores && typeof fb.dimension_scores === "object" && Object.keys(fb.dimension_scores).length > 0 && (
                           <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
                             <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Dimensions</div>
                             {Object.entries(fb.dimension_scores).map(([k,v]) => (
                               <div key={k} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                                 <span style={{ fontSize:12, color:T.sec, width:120, textTransform:"capitalize" }}>{k.replace(/_/g," ")}</span>
-                                <div style={{ flex:1, height:3, background:"var(--surface-hi)", borderRadius:2, overflow:"hidden" }}><div style={{ height:"100%", width:`${v}%`, background:sc(v as number), borderRadius:2 }} /></div>
+                                <div style={{ flex:1, height:3, background:"var(--surface-hi)", borderRadius:2, overflow:"hidden" }}><div style={{ height:"100%", width:`${Math.min(100, v as number)}%`, background:sc(v as number), borderRadius:2 }} /></div>
                                 <span style={{ fontSize:12, fontWeight:700, color:sc(v as number), width:24, textAlign:"right" }}>{v as number}</span>
                               </div>
                             ))}
                           </div>
                         )}
-                        {(fb.strengths?.length>0||fb.improvements?.length>0) && (
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                            {fb.strengths?.length>0 && <div style={{ padding:14, background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.success, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Strengths</div>{fb.strengths.map((s:string,i:number)=><div key={i} style={{ fontSize:12, color:T.text, marginBottom:4 }}>+ {s}</div>)}</div>}
-                            {fb.improvements?.length>0 && <div style={{ padding:14, background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.danger, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Improve</div>{fb.improvements.map((s:string,i:number)=><div key={i} style={{ fontSize:12, color:T.text, marginBottom:4 }}>– {s}</div>)}</div>}
+
+                        {/* Sentence Analysis */}
+                        {Array.isArray(fb.sentence_analysis) && fb.sentence_analysis.length > 0 && (
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
+                            <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Sentence Analysis</div>
+                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                              {fb.sentence_analysis.map((s: any, i: number) => (
+                                <div key={i} style={{ padding:"10px 12px", borderRadius:10, borderLeft:`3px solid ${s.rating==="strong"?T.success:s.rating==="okay"?T.warning:T.danger}`, background: s.rating==="strong"?"rgba(52,211,153,0.06)":s.rating==="okay"?"rgba(251,191,36,0.06)":"rgba(248,113,113,0.06)" }}>
+                                  <p style={{ fontSize:12, color:T.text, margin:0, lineHeight:1.5 }}>&quot;{s.sentence}&quot;</p>
+                                  <p style={{ fontSize:11, color:T.tert, margin:"4px 0 0" }}>{s.reason}</p>
+                                  {s.rewrite && <p style={{ fontSize:12, color:T.cyan, margin:"4px 0 0" }}>Better: &quot;{s.rewrite}&quot;</p>}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
-                        {fb.coaching_tip && <div style={{ padding:14, background:"rgba(34,211,238,0.06)", border:"1px solid rgba(34,211,238,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.cyan, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>💡 Coaching Tip</div><p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{fb.coaching_tip}</p></div>}
+
+                        {/* Delivery Analysis */}
+                        {fb.delivery_analysis && typeof fb.delivery_analysis === "object" && Object.keys(fb.delivery_analysis).length > 0 && (
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
+                            <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Delivery Analysis</div>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                              {Array.isArray(fb.delivery_analysis.filler_words) && fb.delivery_analysis.filler_words.length > 0 && (
+                                <div style={{ padding:10, background:"rgba(248,113,113,0.06)", borderRadius:10 }}>
+                                  <div style={{ fontSize:10, fontWeight:600, color:T.danger, marginBottom:4, textTransform:"uppercase" }}>Filler Words</div>
+                                  <p style={{ fontSize:12, color:T.text, margin:0 }}>{fb.delivery_analysis.filler_words.join(", ")}</p>
+                                </div>
+                              )}
+                              {Array.isArray(fb.delivery_analysis.hedging_phrases) && fb.delivery_analysis.hedging_phrases.length > 0 && (
+                                <div style={{ padding:10, background:"rgba(251,191,36,0.06)", borderRadius:10 }}>
+                                  <div style={{ fontSize:10, fontWeight:600, color:T.warning, marginBottom:4, textTransform:"uppercase" }}>Hedging</div>
+                                  <p style={{ fontSize:12, color:T.text, margin:0 }}>{fb.delivery_analysis.hedging_phrases.join(", ")}</p>
+                                </div>
+                              )}
+                              {Array.isArray(fb.delivery_analysis.power_words) && fb.delivery_analysis.power_words.length > 0 && (
+                                <div style={{ padding:10, background:"rgba(52,211,153,0.06)", borderRadius:10 }}>
+                                  <div style={{ fontSize:10, fontWeight:600, color:T.success, marginBottom:4, textTransform:"uppercase" }}>Power Words</div>
+                                  <p style={{ fontSize:12, color:T.text, margin:0 }}>{fb.delivery_analysis.power_words.join(", ")}</p>
+                                </div>
+                              )}
+                              {fb.delivery_analysis.active_voice_pct != null && (
+                                <div style={{ padding:10, background:"rgba(34,211,238,0.06)", borderRadius:10 }}>
+                                  <div style={{ fontSize:10, fontWeight:600, color:T.cyan, marginBottom:4, textTransform:"uppercase" }}>Active Voice</div>
+                                  <p style={{ fontSize:12, color:T.text, margin:0 }}>{fb.delivery_analysis.active_voice_pct}%</p>
+                                </div>
+                              )}
+                            </div>
+                            {fb.delivery_analysis.pacing_note && <p style={{ fontSize:11, color:T.tert, margin:"8px 0 0" }}>Pacing: {fb.delivery_analysis.pacing_note}</p>}
+                          </div>
+                        )}
+
+                        {/* Strengths & Improvements */}
+                        {(Array.isArray(fb.strengths) && fb.strengths.length>0 || Array.isArray(fb.improvements) && fb.improvements.length>0) && (
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                            {Array.isArray(fb.strengths) && fb.strengths.length>0 && <div style={{ padding:14, background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.success, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Strengths</div>{fb.strengths.map((s:string,i:number)=><div key={i} style={{ fontSize:12, color:T.text, marginBottom:4 }}>+ {s}</div>)}</div>}
+                            {Array.isArray(fb.improvements) && fb.improvements.length>0 && <div style={{ padding:14, background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.danger, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Improve</div>{fb.improvements.map((s:string,i:number)=><div key={i} style={{ fontSize:12, color:T.text, marginBottom:4 }}>– {s}</div>)}</div>}
+                          </div>
+                        )}
+
+                        {/* Coaching Tip */}
+                        {fb.coaching_tip && <div style={{ padding:14, background:"rgba(34,211,238,0.06)", border:"1px solid rgba(34,211,238,0.15)", borderRadius:14 }}><div style={{ fontSize:10, fontWeight:600, color:T.cyan, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Coaching Tip</div><p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{fb.coaching_tip}</p></div>}
+
+                        {/* Weak Areas */}
+                        {Array.isArray(fb.weak_areas) && fb.weak_areas.length > 0 && (
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                            {fb.weak_areas.map((w:string,i:number) => (
+                              <span key={i} style={{ fontSize:11, fontWeight:600, color:T.danger, background:"rgba(248,113,113,0.12)", padding:"4px 12px", borderRadius:999 }}>{WEAK_AREA_LABELS[w]||w}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Weakest Sentence Rewrite */}
+                        {fb.weakest_sentence_rewrite && typeof fb.weakest_sentence_rewrite === "object" && fb.weakest_sentence_rewrite.original && (
+                          <div style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
+                            <div style={{ fontSize:10, fontWeight:600, color:T.tert, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Best Single Improvement</div>
+                            <p style={{ fontSize:12, color:T.danger, margin:"0 0 4px", textDecoration:"line-through" }}>{fb.weakest_sentence_rewrite.original}</p>
+                            <p style={{ fontSize:12, color:T.success, margin:0 }}>{fb.weakest_sentence_rewrite.improved}</p>
+                          </div>
+                        )}
+
+                        {/* Follow-up Question */}
+                        {fb.follow_up_question && (
+                          <div style={{ padding:14, background:"rgba(129,140,248,0.06)", border:"1px solid rgba(129,140,248,0.15)", borderRadius:14 }}>
+                            <div style={{ fontSize:10, fontWeight:600, color:T.violet, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>Likely Follow-Up</div>
+                            <p style={{ fontSize:13, color:T.text, margin:0, lineHeight:1.5 }}>{fb.follow_up_question}</p>
+                          </div>
+                        )}
+
+                        {/* Ideal 90-Second Structure */}
+                        {fb.ideal_90sec_structure && (
+                          <details style={{ padding:14, background:"var(--surface)", borderRadius:14 }}>
+                            <summary style={{ fontSize:10, fontWeight:600, color:T.cyan, textTransform:"uppercase", letterSpacing:"0.07em", cursor:"pointer" }}>Ideal 90-Second Answer Structure</summary>
+                            <p style={{ fontSize:12, color:T.text, margin:"8px 0 0", lineHeight:1.55, whiteSpace:"pre-wrap" }}>{fb.ideal_90sec_structure}</p>
+                          </details>
+                        )}
+
+                        {/* Recommendation & Encouragement */}
+                        {fb.recommendation && (
+                          <div style={{ padding:14, borderRadius:14, background: fb.recommendation==="Strong"?"rgba(52,211,153,0.06)":fb.recommendation==="Good"?"rgba(34,211,238,0.06)":"rgba(251,191,36,0.06)", border:`1px solid ${fb.recommendation==="Strong"?"rgba(52,211,153,0.18)":fb.recommendation==="Good"?"rgba(34,211,238,0.18)":"rgba(251,191,36,0.18)"}` }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                              <span style={{ fontSize:14, fontWeight:700, color: fb.recommendation==="Strong"?T.success:fb.recommendation==="Good"?T.cyan:T.warning }}>{fb.recommendation}</span>
+                              {fb.encouragement && <span style={{ fontSize:12, color:T.tert }}>{fb.encouragement}</span>}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
