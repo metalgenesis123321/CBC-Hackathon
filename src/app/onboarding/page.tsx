@@ -6,7 +6,6 @@ import AppNav from "@/components/AppNav";
 
 const C = { cyan: "#22d3ee", violet: "#818cf8", success: "#34d399", warning: "#fbbf24", danger: "#f87171", text: "var(--text)", sec: "var(--text-sec)", tert: "var(--text-tert)" };
 const card = { background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 20 };
-const cardHi = { background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.18)", borderRadius: 20 };
 
 const ROLE_OPTIONS = ["Software Engineer","Frontend Engineer","Backend Engineer","Full Stack","ML/AI Engineer","Data Scientist","DevOps/SRE","Mobile Developer","Product Manager","Data Engineer","Security Engineer","QA Engineer"];
 const INTERVIEW_TYPES = [
@@ -43,6 +42,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<OnboardingData>({ name:user?.name||"", country:"", resumeText:"", llmContext:"", targetRoles:[], background:"", experience:"", skills:"", interviewType:"mixed", companyName:"Google", jobDescription:"", yearsExperience:"0-2", roundType:"General Prep", targetSkills:"", researchResults:null, generatedQuestions:[] });
   const [isOtherCompany, setIsOtherCompany] = useState(false);
+  const [autoFillJdLoading, setAutoFillJdLoading] = useState(false);
   const update = (fields: Partial<OnboardingData>) => setData(prev => ({ ...prev, ...fields }));
   const toggleRole = (role: string) => setData(prev => ({ ...prev, targetRoles: prev.targetRoles.includes(role) ? prev.targetRoles.filter(r=>r!==role) : [...prev.targetRoles, role] }));
 
@@ -56,22 +56,60 @@ export default function OnboardingPage() {
     } catch(e) { console.error(e); } finally { setLoading(false); }
   }, [data.resumeText, data.llmContext, data.name, data.background, data.experience, data.skills]);
 
-  const runResearch = useCallback(async () => {
-    setLoading(true);
+  const autoFillFromJD = useCallback(async () => {
+    if (!data.jobDescription.trim()) return;
+    setAutoFillJdLoading(true);
     try {
-      const res = await fetch("/api/research", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ company:data.companyName, role:data.targetRoles[0]||"Software Engineer", interviewType:data.interviewType, roundType:data.roundType, skills:data.targetSkills||data.skills, yearsExperience:data.yearsExperience, country:data.country }) });
+      const res = await fetch("/api/parse-profile", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ jobDescription:data.jobDescription }) });
       const result = await res.json();
-      update({ researchResults: result.research });
-    } catch(e) { console.error(e); } finally { setLoading(false); }
-  }, [data]);
+      if (result.profile) {
+        const p = result.profile;
+        const fields: Partial<OnboardingData> = {};
+        if (p.targetCompany && p.targetCompany !== "General") {
+          const preset = COMPANY_PRESETS.find(c => c.toLowerCase() === p.targetCompany.toLowerCase());
+          if (preset) { fields.companyName = preset; setIsOtherCompany(false); }
+          else { fields.companyName = p.targetCompany; setIsOtherCompany(true); }
+        }
+        if (p.yearsExperience) {
+          const yoe = p.yearsExperience;
+          if (yoe <= 2) fields.yearsExperience = "0-2";
+          else if (yoe <= 5) fields.yearsExperience = "2-5";
+          else if (yoe <= 10) fields.yearsExperience = "5-10";
+          else fields.yearsExperience = "10+";
+        }
+        if (p.roundType) {
+          const matchedRound = ROUND_TYPES.find(r => r.toLowerCase().includes(p.roundType.toLowerCase()));
+          if (matchedRound) fields.roundType = matchedRound;
+        }
+        if (p.keySkills) {
+          fields.targetSkills = typeof p.keySkills === "string" ? p.keySkills : (p.keySkills as string[]).join(", ");
+        }
+        if (p.targetRole) {
+          const matchedRole = ROLE_OPTIONS.find(r => r.toLowerCase().includes(p.targetRole.toLowerCase()));
+          if (matchedRole && !data.targetRoles.includes(matchedRole)) {
+            fields.targetRoles = [...data.targetRoles, matchedRole];
+          }
+        }
+        update(fields);
+      }
+    } catch(e) { console.error("Auto-fill from JD error:", e); } finally { setAutoFillJdLoading(false); }
+  }, [data.jobDescription, data.targetRoles]);
 
-  const generateQuestions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/adaptive", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"generate_session", company:data.companyName, role:data.targetRoles[0]||"Software Engineer", country:data.country, profile:{ name:data.name, background:data.background, targetRole:data.targetRoles[0]||"Software Engineer", targetCompany:data.companyName, experience:data.experience, skills:data.skills, country:data.country }, weakAreas:[], completedQuestions:[], sessionNumber:1, interviewType:data.interviewType, jobDescription:data.jobDescription, researchContext:data.researchResults ? JSON.stringify(data.researchResults).substring(0,3000) : undefined }) });
-      const result = await res.json();
-      if (result.session?.questions) update({ generatedQuestions: result.session.questions });
-    } catch(e) { console.error(e); } finally { setLoading(false); }
+  // Fire-and-forget: run research in background and save results to localStorage when done
+  const runResearchInBackground = useCallback(() => {
+    fetch("/api/research", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ company:data.companyName, role:data.targetRoles[0]||"Software Engineer", interviewType:data.interviewType, roundType:data.roundType, skills:data.targetSkills||data.skills, yearsExperience:data.yearsExperience, country:data.country }) })
+      .then(res => res.json())
+      .then(result => {
+        if (result.research) {
+          // Update localStorage with research results so the home page can use them
+          try {
+            const config = JSON.parse(localStorage.getItem("interview_session_config") || "{}");
+            config.researchResults = result.research;
+            localStorage.setItem("interview_session_config", JSON.stringify(config));
+          } catch { /* ignore */ }
+        }
+      })
+      .catch(e => console.error("Background research error:", e));
   }, [data]);
 
   const finishOnboarding = async () => {
@@ -79,18 +117,19 @@ export default function OnboardingPage() {
     try {
       await fetch("/api/auth/profile", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name:data.name, background:data.background, target_role:data.targetRoles[0]||"Software Engineer", target_company:data.companyName, experience:data.experience, skills:data.skills, resume_text:data.resumeText, llm_context:data.llmContext, target_roles:data.targetRoles, interview_type:data.interviewType, country:data.country, onboarded:true }) });
       await refreshUser();
-      localStorage.setItem("interview_session_config", JSON.stringify({ companyName:data.companyName, interviewType:data.interviewType, roundType:data.roundType, jobDescription:data.jobDescription, generatedQuestions:data.generatedQuestions, researchResults:data.researchResults, country:data.country }));
+      // Save session config (research will be populated in background)
+      localStorage.setItem("interview_session_config", JSON.stringify({ companyName:data.companyName, interviewType:data.interviewType, roundType:data.roundType, jobDescription:data.jobDescription, generatedQuestions:[], researchResults:null, country:data.country }));
+      // Fire off research in background — results saved to localStorage when ready
+      runResearchInBackground();
       router.push("/");
     } catch(e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const totalSteps = 5;
+  const totalSteps = 3;
   const STEPS = [
     { label: "Profile", desc: "Your background & resume" },
     { label: "Interview Type", desc: "Behavioral, technical, mixed" },
     { label: "Company & Role", desc: "Target company & round" },
-    { label: "Research", desc: "Real interview insights" },
-    { label: "Questions", desc: "Your personalized set" },
   ];
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)", fontFamily:"-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", position:"relative" }}>
@@ -300,133 +339,34 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Skills + JD */}
+            {/* JD (Required) */}
+            <div style={{ ...card, padding:"28px 32px", display:"flex", flexDirection:"column", gap:18 }}>
+              <div>
+                <label style={{ display:"block", fontSize:12, fontWeight:600, color:C.tert, marginBottom:8, letterSpacing:"0.05em", textTransform:"uppercase" }}>
+                  Job Description <span style={{ color:C.danger }}>*</span>
+                </label>
+                <textarea value={data.jobDescription} onChange={e=>update({jobDescription:e.target.value})} placeholder="Paste the full job description here — we'll auto-fill company, skills, experience level, and more..." rows={6}
+                  style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${!data.jobDescription.trim() ? "rgba(248,113,113,0.4)" : "rgba(255,255,255,0.10)"}`, borderRadius:12, padding:"14px 16px", fontSize:15, color:C.text, outline:"none", fontFamily:"inherit", resize:"vertical", boxSizing:"border-box" as const }} />
+                {!data.jobDescription.trim() && (
+                  <p style={{ fontSize:12, color:C.danger, marginTop:6 }}>Job description is required for personalized questions.</p>
+                )}
+              </div>
+              {data.jobDescription.trim() && (
+                <button onClick={autoFillFromJD} disabled={autoFillJdLoading}
+                  style={{ width:"100%", padding:"14px", borderRadius:12, background:"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:15, fontWeight:700, border:"none", cursor:autoFillJdLoading?"not-allowed":"pointer", fontFamily:"inherit", opacity:autoFillJdLoading?0.7:1, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  {autoFillJdLoading ? (
+                    <><div style={{ width:16, height:16, border:"2px solid white", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />Analysing JD with AI...</>
+                  ) : (
+                    <>⚡ Auto-Fill from Job Description</>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Skills */}
             <div style={{ ...card, padding:"28px 32px", display:"flex", flexDirection:"column", gap:18 }}>
               <Field label="Key Skills for This Role" value={data.targetSkills} onChange={v=>update({targetSkills:v})} placeholder="e.g., React, Node.js, distributed systems, leadership" />
-              <Field label="Job Description (Optional)" value={data.jobDescription} onChange={v=>update({jobDescription:v})} placeholder="Paste the full job description for tailored questions..." multiline rows={5} />
             </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: Research ── */}
-        {step === 4 && (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div>
-              <h2 style={{ fontSize:30, fontWeight:800, color:"var(--heading)", letterSpacing:"-0.03em", margin:"0 0 8px" }}>Interview Research</h2>
-              <p style={{ fontSize:16, color:C.sec, margin:0 }}>Hang Tight while we search the web for real {data.companyName} interview experiences.</p>
-            </div>
-
-            {!data.researchResults && !loading && (
-              <div style={{ ...cardHi, padding:"48px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:16, opacity:0.8 }}>🔍</div>
-                <div style={{ fontSize:18, fontWeight:700, color:"var(--heading)", marginBottom:8 }}>Search {data.companyName} Experiences</div>
-                <p style={{ fontSize:15, color:C.sec, marginBottom:28, maxWidth:420, margin:"0 auto 28px" }}>Searches Reddit, LeetCode, Glassdoor & GFG for real {data.targetRoles[0]||"SWE"} interview reports.</p>
-                <button onClick={runResearch} style={{ padding:"16px 40px", borderRadius:14, background:"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
-                  Search Interview Experiences
-                </button>
-              </div>
-            )}
-
-            {loading && (
-              <div style={{ ...card, padding:"60px 32px", textAlign:"center" }}>
-                <div style={{ width:40, height:40, border:"3px solid rgba(255,255,255,0.07)", borderTopColor:C.cyan, borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 20px" }} />
-                <p style={{ fontSize:15, color:C.sec, margin:0 }}>Searching interview experiences across Reddit, LeetCode, Glassdoor, GFG...</p>
-              </div>
-            )}
-
-            {data.researchResults && (() => {
-              const r = data.researchResults as Record<string,unknown>;
-              return (
-                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                  {r.interview_format && (
-                    <div style={{ ...card, padding:"24px 28px" }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.violet, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:10 }}>Interview Format</div>
-                      <p style={{ fontSize:15, color:C.text, lineHeight:1.6, margin:0 }}>{r.interview_format as string}</p>
-                    </div>
-                  )}
-                  {(r.common_questions as string[])?.length > 0 && (
-                    <div style={{ ...card, padding:"24px 28px" }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.cyan, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Common Questions Reported</div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                        {(r.common_questions as string[]).map((q,i) => (
-                          <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                            <span style={{ color:C.cyan, fontSize:14, flexShrink:0, marginTop:1 }}>→</span>
-                            <p style={{ fontSize:14, color:C.text, margin:0, lineHeight:1.55 }}>{q}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {(r.tips as string[])?.length > 0 && (
-                    <div style={{ ...cardHi, padding:"24px 28px" }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.cyan, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>Tips from Candidates</div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                        {(r.tips as string[]).map((t,i) => <p key={i} style={{ fontSize:14, color:C.text, margin:0, lineHeight:1.55 }}>• {t}</p>)}
-                      </div>
-                    </div>
-                  )}
-                  {r.difficulty && (
-                    <div style={{ ...card, padding:"18px 28px", display:"flex", alignItems:"center", gap:12 }}>
-                      <span style={{ fontSize:13, color:C.sec }}>Reported Difficulty:</span>
-                      <span style={{ fontSize:15, fontWeight:700, color: r.difficulty==="Hard" ? C.danger : r.difficulty==="Medium" ? C.warning : C.success }}>{r.difficulty as string}</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* ── STEP 5: Questions ── */}
-        {step === 5 && (
-          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-            <div>
-              <h2 style={{ fontSize:30, fontWeight:800, color:"var(--heading)", letterSpacing:"-0.03em", margin:"0 0 8px" }}>Your Practice Questions</h2>
-              <p style={{ fontSize:16, color:C.sec, margin:0 }}>Generated based on your profile, {data.companyName}&apos;s interview style, and real candidate experiences.</p>
-            </div>
-
-            {data.generatedQuestions.length === 0 && !loading && (
-              <div style={{ ...cardHi, padding:"48px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:16, opacity:0.8 }}>✦</div>
-                <div style={{ fontSize:18, fontWeight:700, color:"var(--heading)", marginBottom:8 }}>Generate Your Questions</div>
-                <p style={{ fontSize:15, color:C.sec, marginBottom:28, maxWidth:380, margin:"0 auto 28px" }}>AI will personalise 5 questions based on everything you&apos;ve told us.</p>
-                <button onClick={generateQuestions} style={{ padding:"16px 40px", borderRadius:14, background:"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
-                  Generate Personalized Questions
-                </button>
-              </div>
-            )}
-
-            {loading && (
-              <div style={{ ...card, padding:"60px 32px", textAlign:"center" }}>
-                <div style={{ width:40, height:40, border:"3px solid rgba(255,255,255,0.07)", borderTopColor:C.violet, borderRadius:"50%", animation:"spin 0.7s linear infinite", margin:"0 auto 20px" }} />
-                <p style={{ fontSize:15, color:C.sec, margin:0 }}>Generating personalised questions based on your profile and research...</p>
-              </div>
-            )}
-
-            {data.generatedQuestions.length > 0 && (
-              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-                {(data.generatedQuestions as {text:string;type:string;category:string;difficulty:string;hint?:string}[]).map((q, i) => {
-                  const typeColor = q.type==="behavioral" ? C.cyan : q.type==="technical" ? C.violet : C.warning;
-                  const diffColor = q.difficulty==="easy" ? C.success : q.difficulty==="medium" ? C.warning : C.danger;
-                  return (
-                    <div key={i} style={{ ...card, padding:"22px 28px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-                        <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg, #22d3ee, #818cf8)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:"white", flexShrink:0 }}>{i+1}</div>
-                        <span style={{ padding:"3px 10px", borderRadius:999, fontSize:11, fontWeight:600, background:`${typeColor}18`, color:typeColor }}>{q.type}</span>
-                        <span style={{ fontSize:12, color:C.tert }}>{q.category}</span>
-                        <span style={{ padding:"3px 10px", borderRadius:999, fontSize:11, fontWeight:600, background:`${diffColor}18`, color:diffColor }}>{q.difficulty}</span>
-                      </div>
-                      <p style={{ fontSize:16, color:C.text, lineHeight:1.55, margin:"0 0 8px" }}>{q.text}</p>
-                      {q.hint && <p style={{ fontSize:13, color:C.sec, margin:0, fontStyle:"italic" }}>{q.hint}</p>}
-                    </div>
-                  );
-                })}
-
-                <button onClick={finishOnboarding} disabled={loading} style={{ marginTop:8, padding:"18px", borderRadius:16, background:"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:17, fontWeight:700, border:"none", cursor:loading?"not-allowed":"pointer", fontFamily:"inherit", opacity:loading?0.7:1 }}>
-                  {loading ? "Saving..." : "Start Practising →"}
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -436,10 +376,15 @@ export default function OnboardingPage() {
             style={{ padding:"14px 28px", borderRadius:14, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.10)", color:step===1?"rgba(255,255,255,0.2)":C.sec, fontSize:15, fontWeight:600, cursor:step===1?"not-allowed":"pointer", fontFamily:"inherit" }}>
             ← Back
           </button>
-          {step < totalSteps && (
-            <button onClick={()=>{ if(step===4&&!data.researchResults){runResearch().then(()=>setStep(s=>s+1));}else{setStep(s=>s+1);}}} disabled={step===1&&!data.name}
+          {step < totalSteps ? (
+            <button onClick={()=>setStep(s=>s+1)} disabled={(step===1&&!data.name)}
               style={{ padding:"14px 32px", borderRadius:14, background: (step===1&&!data.name)?"rgba(34,211,238,0.3)":"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:15, fontWeight:700, border:"none", cursor:(step===1&&!data.name)?"not-allowed":"pointer", fontFamily:"inherit" }}>
-              {step===4&&!data.researchResults ? "Skip Research" : "Continue →"}
+              Continue →
+            </button>
+          ) : (
+            <button onClick={finishOnboarding} disabled={loading||!data.jobDescription.trim()}
+              style={{ padding:"14px 32px", borderRadius:14, background: (!data.jobDescription.trim())?"rgba(34,211,238,0.3)":"linear-gradient(135deg, #22d3ee, #818cf8)", color:"white", fontSize:15, fontWeight:700, border:"none", cursor:(loading||!data.jobDescription.trim())?"not-allowed":"pointer", fontFamily:"inherit", opacity:loading?0.7:1 }}>
+              {loading ? "Saving..." : "Start Practising →"}
             </button>
           )}
         </div>

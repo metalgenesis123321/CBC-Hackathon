@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/theme-context";
 
 const TABS = [
-  { id: "practice", label: "Practice" },
+  { id: "practice", label: "Interview" },
   { id: "3d-interview", label: "3D Mock" },
   { id: "progress", label: "Progress" },
   { id: "history", label: "History" },
