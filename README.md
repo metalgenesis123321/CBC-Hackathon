@@ -6,6 +6,16 @@
 
 ---
 
+## Problem Statement
+
+**Interview coaching costs $200–500 per session. 73% of candidates get zero structured feedback before their real interview.**
+
+First-gen students, career changers, and non-native speakers are hit the hardest — they can't afford a coach, don't have industry connections for mock interviews, and practicing alone with a Google Doc doesn't prepare you for speaking out loud under pressure. The tools that exist (ChatGPT prompts, Pramp, Interviewing.io) give you a score and a bullet list. That's it. No one explains *why* you scored low, no one rewrites your weak sentences, and no one lets you ask "how do I fix this?" — the way a real coach would.
+
+**We built InterviewCoach AI to solve this:** a free, voice-first mock interview platform where an AI interviewer sits across from you in a 3D office, asks real company-specific questions, listens to your answer, scores your STAR structure sentence-by-sentence, speaks personalized feedback out loud, and lets you ask follow-up questions about your score — all in real time. Our team combined five sponsor APIs into a dual-model architecture where Gemini analyzes and Claude coaches, creating the first interview prep tool that gives you **feedback on the feedback**.
+
+---
+
 ## What Makes This Different
 
 **We checked every interview prep platform out there — none of them give you feedback on the feedback.**
