@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findUserByEmail, verifyPassword, createToken, setAuthCookie } from "@/lib/auth";
+import { findUserByEmail, verifyPassword, createToken, setAuthCookie, hashPassword, createUserWithEmail } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,8 +10,20 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await findUserByEmail(email);
+
     if (!user || !user.password_hash) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+      if (password.length < 6) {
+        return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+      }
+      const defaultName = email.split("@")[0];
+      const passwordHash = await hashPassword(password);
+      const newUser = await createUserWithEmail(email, passwordHash, defaultName);
+      const token = await createToken(newUser.id);
+      const response = NextResponse.json({
+        user: { id: newUser.id, email: newUser.email, name: newUser.name, onboarded: false },
+        created: true,
+      });
+      return setAuthCookie(response, token);
     }
 
     const valid = await verifyPassword(password, user.password_hash);
